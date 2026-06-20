@@ -64,12 +64,5 @@
       }
     },
     "createUpdaterArtifacts": false
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/qunf/myOpenClawManager/releases/latest/download/latest.json"
-      ]
-    }
   }
 }

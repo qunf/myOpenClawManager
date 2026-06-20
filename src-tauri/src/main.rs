@@ -26,11 +26,6 @@ fn main() {
     log::info!("🦞 OpenClaw Manager started");
 
     tauri::Builder::default()
-        .setup(|app| {
-            #[cfg(desktop)]
-            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
-            Ok(())
-        })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
@@ -116,7 +111,6 @@ fn main() {
             skills::check_clawhub_installed,
             skills::install_clawhub,
             skills::install_skill,
-            skills::uninstall_skill,
             skills::uninstall_skill,
             skills::uninstall_clawhub,
             // Multi-Agent Routing

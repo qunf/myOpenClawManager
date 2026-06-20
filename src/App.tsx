@@ -153,21 +153,9 @@ function App() {
     }
   }, []);
 
-  // Check Manager Update
+  // Check Manager Update (disabled - updater plugin removed)
   const checkManagerUpdate = useCallback(async () => {
-    if (!isTauri()) return;
-    try {
-      const { check } = await import('@tauri-apps/plugin-updater');
-      const update = await check();
-      if (update) {
-        setManagerUpdateAvailable(true);
-        setManagerUpdateVersion(update.version);
-        setManagerUpdateObj(update);
-        setShowManagerUpdateBanner(true);
-      }
-    } catch (e) {
-      appLogger.error('Manager update check failed', e);
-    }
+    // Updater not available without signing key
   }, []);
 
   // Check security version
@@ -214,45 +202,9 @@ function App() {
     }
   };
 
-  // Perform Manager Update (from banner)
+  // Perform Manager Update (from banner) - disabled
   const handleManagerUpdate = async () => {
-    if (!managerUpdateObj) return;
-    setManagerUpdating(true);
-    setManagerUpdateProgress(0);
-    setManagerUpdateResult(null);
-    try {
-      let downloaded = 0;
-      let contentLength = 1;
-      await managerUpdateObj.downloadAndInstall((event: any) => {
-        switch (event.event) {
-          case 'Started':
-            contentLength = event.data.contentLength || 1;
-            break;
-          case 'Progress':
-            downloaded += event.data.chunkLength;
-            setManagerUpdateProgress(Math.min(100, Math.round((downloaded / contentLength) * 100)));
-            break;
-          case 'Finished':
-            setManagerUpdateProgress(100);
-            break;
-        }
-      });
-      setManagerUpdateResult({ success: true, message: 'Update installed successfully! Restarting...' });
-
-      // Restart app after 2 seconds
-      setTimeout(async () => {
-        try {
-          const { relaunch } = await import('@tauri-apps/plugin-process');
-          await relaunch();
-        } catch (err) {
-          appLogger.error('Relaunch failed', err);
-        }
-      }, 2000);
-    } catch (e: any) {
-      appLogger.error('Manager update download failed', e);
-      setManagerUpdateResult({ success: false, message: 'Update failed', error: e?.message || String(e) });
-      setManagerUpdating(false);
-    }
+    // Updater not available without signing key
   };
 
   useEffect(() => {

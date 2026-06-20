@@ -273,63 +273,14 @@ export function Settings({ onEnvironmentChange }: SettingsProps) {
     }
   };
 
-  // Manager self-update: check for updates
+  // Manager self-update: check for updates (disabled - updater plugin removed)
   const checkManagerUpdate = async () => {
-    if (!isTauri()) return;
-    setManagerChecking(true);
-    setManagerUpdateError(null);
-    setManagerUpdateAvailable(false);
-    setManagerCheckDone(false);
-    setManagerUpdateDone(false);
-    try {
-      const { check } = await import('@tauri-apps/plugin-updater');
-      const update = await check();
-      if (update) {
-        setManagerUpdateAvailable(true);
-        setManagerUpdateVersion(update.version);
-        setManagerUpdateBody(update.body || null);
-        setManagerUpdateObj(update);
-      } else {
-        setManagerCheckDone(true);
-      }
-    } catch (e: any) {
-      appLogger.error('Manager update check failed', e);
-      setManagerUpdateError(e?.message || String(e));
-    } finally {
-      setManagerChecking(false);
-    }
+    setManagerCheckDone(true);
   };
 
-  // Manager self-update: download & install
+  // Manager self-update: download & install (disabled - updater plugin removed)
   const downloadManagerUpdate = async () => {
-    if (!managerUpdateObj) return;
-    setManagerDownloading(true);
-    setManagerDownloadProgress(0);
-    setManagerUpdateError(null);
-    try {
-      let downloaded = 0;
-      let contentLength = 1;
-      await managerUpdateObj.downloadAndInstall((event: any) => {
-        switch (event.event) {
-          case 'Started':
-            contentLength = event.data.contentLength || 1;
-            break;
-          case 'Progress':
-            downloaded += event.data.chunkLength;
-            setManagerDownloadProgress(Math.min(100, Math.round((downloaded / contentLength) * 100)));
-            break;
-          case 'Finished':
-            setManagerDownloadProgress(100);
-            break;
-        }
-      });
-      setManagerUpdateDone(true);
-    } catch (e: any) {
-      appLogger.error('Manager update download failed', e);
-      setManagerUpdateError(e?.message || String(e));
-    } finally {
-      setManagerDownloading(false);
-    }
+    setManagerUpdateError('Updater not available without signing key');
   };
 
   // Manager self-update: restart app
