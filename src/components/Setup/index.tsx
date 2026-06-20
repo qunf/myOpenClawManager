@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import {
@@ -39,6 +40,7 @@ interface SetupProps {
 }
 
 export function Setup({ onComplete, embedded = false }: SetupProps) {
+  const { t } = useTranslation();
   const [envStatus, setEnvStatus] = useState<EnvironmentStatus | null>(null);
   const [checking, setChecking] = useState(true);
   const [installing, setInstalling] = useState<'nodejs' | 'openclaw' | null>(null);
@@ -92,17 +94,17 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
         await checkEnvironment();
       } else if (result.message.includes('restart') || result.message.includes('重启')) {
         // Need to restart application
-        setError('Node.js installation complete, please restart the application for environment variables to take effect');
+        setError(t('setup.restartRequired'));
       } else {
         // Open terminal for manual installation
         await invoke<string>('open_install_terminal', { installType: 'nodejs' });
-        setError('Installation terminal opened, please complete the installation in the terminal then click "Re-check"');
+        setError(t('setup.terminalOpened'));
       }
     } catch (e) {
       // If automatic installation fails, open terminal
       try {
         await invoke<string>('open_install_terminal', { installType: 'nodejs' });
-        setError('Installation terminal opened, please complete the installation in the terminal then click "Re-check"');
+        setError(t('setup.terminalOpened'));
       } catch (termErr) {
         setError(`Installation failed: ${e}. ${termErr}`);
       }
@@ -131,13 +133,13 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
         setupLogger.warn('Automatic installation failed, opening terminal for manual installation');
         // Open terminal for manual installation
         await invoke<string>('open_install_terminal', { installType: 'openclaw' });
-        setError('Installation terminal opened, please complete the installation in the terminal then click "Re-check"');
+        setError(t('setup.terminalOpened'));
       }
     } catch (e) {
       setupLogger.error('Installation failed, trying to open terminal', e);
       try {
         await invoke<string>('open_install_terminal', { installType: 'openclaw' });
-        setError('Installation terminal opened, please complete the installation in the terminal then click "Re-check"');
+        setError(t('setup.terminalOpened'));
       } catch (termErr) {
         setError(`Installation failed: ${e}. ${termErr}`);
       }
@@ -169,7 +171,7 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
             className="text-center py-6"
           >
             <Loader2 className="w-10 h-10 text-brand-500 animate-spin mx-auto mb-3" />
-            <p className="text-dark-300">Detecting system environment...</p>
+            <p className="text-dark-300">{t('setup.detecting')}</p>
           </motion.div>
         )}
 
@@ -185,7 +187,7 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
             {/* System info (non-embedded mode only) */}
             {!embedded && (
               <div className="flex items-center justify-between text-sm text-dark-400 pb-4 border-b border-dark-700">
-                <span>Operating System</span>
+                <span>{t('setup.os')}</span>
                 <span className="text-dark-200">{getOsName(envStatus.os)}</span>
               </div>
             )}
@@ -203,8 +205,8 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
                   <p className="text-white font-medium">Node.js</p>
                   <p className="text-sm text-dark-400">
                     {envStatus.node_version
-                      ? `${envStatus.node_version} ${envStatus.node_version_ok ? '✓' : '(requires v22+)'}`
-                      : 'Not installed'}
+                      ? `${envStatus.node_version} ${envStatus.node_version_ok ? '✓' : t('setup.requires')}`
+                      : t('setup.notInstalled')}
                   </p>
                 </div>
               </div>
@@ -220,12 +222,12 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
                   {installing === 'nodejs' ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Installing...
+                      {t('setup.installing')}
                     </>
                   ) : (
                     <>
                       <Download className="w-4 h-4" />
-                      Install
+                      {t('setup.install')}
                     </>
                   )}
                 </button>
@@ -244,7 +246,7 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
                 <div>
                   <p className="text-white font-medium">OpenClaw</p>
                   <p className="text-sm text-dark-400">
-                    {envStatus.openclaw_version || 'Not installed'}
+                    {envStatus.openclaw_version || t('setup.notInstalled')}
                   </p>
                 </div>
               </div>
@@ -257,17 +259,17 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
                   disabled={installing !== null || !envStatus.node_version_ok}
                   className={`btn-primary text-sm px-4 py-2 flex items-center gap-2 ${!envStatus.node_version_ok ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
-                  title={!envStatus.node_version_ok ? 'Please install Node.js first' : ''}
+                  title={!envStatus.node_version_ok ? t('setup.installNodeFirst') : ''}
                 >
                   {installing === 'openclaw' ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Installing...
+                      {t('setup.installing')}
                     </>
                   ) : (
                     <>
                       <Download className="w-4 h-4" />
-                      Install
+                      {t('setup.install')}
                     </>
                   )}
                 </button>
@@ -293,7 +295,7 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
                 className="flex-1 btn-secondary py-2.5 flex items-center justify-center gap-2"
               >
                 <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
-                Re-check
+                {t('setup.recheck')}
               </button>
 
               {envStatus.ready && (
@@ -301,7 +303,7 @@ export function Setup({ onComplete, embedded = false }: SetupProps) {
                   onClick={onComplete}
                   className="flex-1 btn-primary py-2.5 flex items-center justify-center gap-2"
                 >
-                  Get Started
+                  {t('setup.getStarted')}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}

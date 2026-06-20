@@ -7,6 +7,7 @@ import { Header } from './components/Layout/Header';
 import { appLogger } from './lib/logger';
 import { isTauri } from './lib/tauri';
 import { Download, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Lazy loaded page components
 const Dashboard = React.lazy(() => import('./components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -94,6 +95,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 function App() {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState<PageType>('dashboard');
   const [envStatus, setEnvStatus] = useState<EnvironmentStatus | null>(null);
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
@@ -346,7 +348,7 @@ function App() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 mb-4 animate-pulse shadow-lg shadow-purple-900/20">
           <span className="text-3xl">🦞</span>
         </div>
-        <p className="text-dark-400 font-medium">Loading component...</p>
+        <p className="text-dark-400 font-medium">{t('app.loading')}</p>
       </div>
     </div>
   );
@@ -371,10 +373,10 @@ function App() {
                 <AlertCircle size={20} className="text-white" />
                 <div>
                   <p className="text-sm font-bold text-white">
-                    Security Warning: Your OpenClaw version ({secureVersionInfo.current_version}) is insecure.
+                    {t('app.security.warning', { version: secureVersionInfo.current_version })}
                   </p>
                   <p className="text-xs text-white/90">
-                    A version &ge; 2026.1.29 is required. Please update immediately.
+                    {t('app.security.require')}
                   </p>
                 </div>
               </div>
@@ -415,10 +417,10 @@ function App() {
                   ) : (
                     <>
                       <p className="text-sm font-medium text-white">
-                        New version available: OpenClaw {updateInfo.latest_version}
+                        {t('app.update.available', { version: updateInfo.latest_version })}
                       </p>
                       <p className="text-xs text-white/70">
-                        Current version: {updateInfo.current_version}
+                        {t('app.update.current', { version: updateInfo.current_version })}
                       </p>
                     </>
                   )}
@@ -435,12 +437,12 @@ function App() {
                     {updating ? (
                       <>
                         <Loader2 size={14} className="animate-spin" />
-                        Updating...
+                        {t('app.update.updating')}
                       </>
                     ) : (
                       <>
                         <Download size={14} />
-                        Update Now
+                        {t('app.update.updateNow')}
                       </>
                     )}
                   </button>
@@ -487,7 +489,7 @@ function App() {
                     <>
                       <div className="flex justify-between items-center pr-4">
                         <p className="text-sm font-medium text-white">
-                          New version available: Manager v{managerUpdateVersion}
+                          {t('app.managerUpdate.available', { version: managerUpdateVersion })}
                         </p>
                         {managerUpdating && (
                           <span className="text-xs text-white/80">{managerUpdateProgress}%</span>
@@ -516,12 +518,12 @@ function App() {
                     {managerUpdating ? (
                       <>
                         <Loader2 size={14} className="animate-spin" />
-                        Updating...
+                        {t('app.managerUpdate.updating')}
                       </>
                     ) : (
                       <>
                         <Download size={14} />
-                        Update Now
+                        {t('app.managerUpdate.updateNow')}
                       </>
                     )}
                   </button>

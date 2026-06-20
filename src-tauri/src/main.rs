@@ -153,6 +153,11 @@ fn main() {
             // Gateway Configuration
             config::get_gateway_config,
             config::save_gateway_config,
+            // Custom OpenClaw Path & Port
+            config::get_custom_openclaw_path,
+            config::save_custom_openclaw_path,
+            config::get_gateway_port,
+            config::save_gateway_port,
             // Configuration Management
             config::export_config,
             config::import_config,

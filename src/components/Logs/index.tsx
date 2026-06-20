@@ -8,6 +8,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { logStore, LogEntry } from '../../lib/logger';
 
 type FilterLevel = 'all' | 'debug' | 'info' | 'warn' | 'error';
@@ -39,6 +40,7 @@ const MODULE_COLORS: Record<string, string> = {
 };
 
 export function Logs() {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState<FilterLevel>('all');
   const [moduleFilter, setModuleFilter] = useState<string>('all');
@@ -136,11 +138,11 @@ export function Logs() {
             onChange={(e) => setFilter(e.target.value as FilterLevel)}
             className="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-300"
           >
-            <option value="all">All Levels</option>
-            <option value="debug">Debug</option>
-            <option value="info">Info</option>
-            <option value="warn">Warn</option>
-            <option value="error">Error</option>
+          <option value="all">{t('logs.allLevels')}</option>
+          <option value="debug">{t('logs.debug')}</option>
+          <option value="info">{t('logs.info')}</option>
+          <option value="warn">{t('logs.warn')}</option>
+          <option value="error">{t('logs.error')}</option>
           </select>
         </div>
 
@@ -150,7 +152,7 @@ export function Logs() {
           onChange={(e) => setModuleFilter(e.target.value)}
           className="bg-dark-700 border border-dark-500 rounded-lg px-3 py-1.5 text-sm text-gray-300"
         >
-          <option value="all">All Modules</option>
+          <option value="all">{t('logs.allModules')}</option>
           {modules.map(module => (
             <option key={module} value={module}>{module}</option>
           ))}
@@ -160,9 +162,9 @@ export function Logs() {
 
         {/* Statistics */}
         <div className="flex items-center gap-3 text-xs text-gray-500">
-          <span>{filteredLogs.length} / {logs.length} entries</span>
-          <span className="text-red-400">{logs.filter(l => l.level === 'error').length} errors</span>
-          <span className="text-yellow-400">{logs.filter(l => l.level === 'warn').length} warnings</span>
+          <span>{filteredLogs.length} / {logs.length}{t('logs.entries')}</span>
+          <span className="text-red-400">{logs.filter(l => l.level === 'error').length}{t('logs.errors')}</span>
+          <span className="text-yellow-400">{logs.filter(l => l.level === 'warn').length}{t('logs.warnings')}</span>
         </div>
 
         {/* Action buttons */}
@@ -174,26 +176,26 @@ export function Logs() {
               onChange={(e) => setAutoScroll(e.target.checked)}
               className="w-3 h-3 rounded"
             />
-            Auto scroll
+            {t('logs.autoScroll')}
           </label>
           <button
             onClick={handleExport}
             className="icon-button text-gray-400 hover:text-white"
-            title="Export logs"
+            title={t('logs.exportLogs')}
           >
             <Download size={16} />
           </button>
           <button
             onClick={() => setLogs(logStore.getAll())}
             className="icon-button text-gray-400 hover:text-white"
-            title="Refresh"
+            title={t('logs.refresh')}
           >
             <RefreshCw size={16} />
           </button>
           <button
             onClick={handleClear}
             className="icon-button text-gray-400 hover:text-red-400"
-            title="Clear logs"
+            title={t('logs.clearLogs')}
           >
             <Trash2 size={16} />
           </button>
@@ -205,7 +207,7 @@ export function Logs() {
         {/* Title bar */}
         <div className="flex items-center gap-2 px-4 py-2 bg-dark-700 border-b border-dark-600">
           <Terminal size={14} className="text-gray-500" />
-          <span className="text-xs text-gray-400 font-medium">Application Logs</span>
+          <span className="text-xs text-gray-400 font-medium">{t('logs.title')}</span>
         </div>
 
         {/* Log content */}
@@ -214,7 +216,7 @@ export function Logs() {
             <div className="h-full flex items-center justify-center text-gray-500">
               <div className="text-center">
                 <Terminal size={32} className="mx-auto mb-2 opacity-50" />
-                <p>No logs available</p>
+                <p>{t('logs.noLogs')}</p>
               </div>
             </div>
           ) : (

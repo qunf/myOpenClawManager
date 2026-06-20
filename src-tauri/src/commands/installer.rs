@@ -716,19 +716,22 @@ node --version
 
 /// Install OpenClaw
 #[command]
-pub async fn install_openclaw() -> Result<InstallResult, String> {
+pub async fn install_openclaw(install_path: Option<String>) -> Result<InstallResult, String> {
     info!("[Install OpenClaw] Starting OpenClaw installation...");
+    if let Some(ref path) = install_path {
+        info!("[Install OpenClaw] Custom install path: {}", path);
+    }
     let os = platform::get_os();
     info!("[Install OpenClaw] Detected operating system: {}", os);
 
     let result = match os.as_str() {
         "windows" => {
             info!("[Install OpenClaw] Using Windows installation method...");
-            install_openclaw_windows().await
+            install_openclaw_windows(install_path).await
         },
         _ => {
             info!("[Install OpenClaw] Using Unix installation method (npm)...");
-            install_openclaw_unix().await
+            install_openclaw_unix(install_path).await
         },
     };
 
@@ -742,32 +745,38 @@ pub async fn install_openclaw() -> Result<InstallResult, String> {
 }
 
 /// Install OpenClaw on Windows
-async fn install_openclaw_windows() -> Result<InstallResult, String> {
-    let script = r#"
+async fn install_openclaw_windows(install_path: Option<String>) -> Result<InstallResult, String> {
+    let npm_cmd = if let Some(ref path) = install_path {
+        format!("npm install -g openclaw@latest --prefix \"{}\" --unsafe-perm", path)
+    } else {
+        "npm install -g openclaw@latest --unsafe-perm".to_string()
+    };
+
+    let script = format!(r#"
 $ErrorActionPreference = 'Stop'
 
 # Check Node.js
 $nodeVersion = node --version 2>$null
-if (-not $nodeVersion) {
+if (-not $nodeVersion) {{
     Write-Host "Error: Please install Node.js first"
     exit 1
-}
+}}
 
 Write-Host "Installing OpenClaw using npm..."
-npm install -g openclaw@latest --unsafe-perm
+{}
 
 # Verify installation
 $openclawVersion = openclaw --version 2>$null
-if ($openclawVersion) {
+if ($openclawVersion) {{
     Write-Host "OpenClaw installed successfully: $openclawVersion"
     exit 0
-} else {
+}} else {{
     Write-Host "OpenClaw installation failed"
     exit 1
-}
-"#;
+}}
+"#, npm_cmd);
 
-    match shell::run_powershell_output(script) {
+    match shell::run_powershell_output(&script) {
         Ok(output) => {
             if get_openclaw_version().is_some() {
                 Ok(InstallResult {
@@ -792,8 +801,14 @@ if ($openclawVersion) {
 }
 
 /// Install OpenClaw on Unix systems
-async fn install_openclaw_unix() -> Result<InstallResult, String> {
-    let script = r#"
+async fn install_openclaw_unix(install_path: Option<String>) -> Result<InstallResult, String> {
+    let npm_cmd = if let Some(ref path) = install_path {
+        format!("npm install -g openclaw@latest --prefix \"{}\" --unsafe-perm", path)
+    } else {
+        "npm install -g openclaw@latest --unsafe-perm".to_string()
+    };
+
+    let script = format!(r#"
 # Check Node.js
 if ! command -v node &> /dev/null; then
     echo "Error: Please install Node.js first"
@@ -801,13 +816,13 @@ if ! command -v node &> /dev/null; then
 fi
 
 echo "Installing OpenClaw using npm..."
-npm install -g openclaw@latest --unsafe-perm
+{}
 
 # Verify installation
 openclaw --version
-"#;
+"#, npm_cmd);
 
-    match shell::run_bash_output(script) {
+    match shell::run_bash_output(&script) {
         Ok(output) => Ok(InstallResult {
             success: true,
             message: format!("OpenClaw installed successfully! {}", output),

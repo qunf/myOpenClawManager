@@ -17,7 +17,12 @@ use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-const SERVICE_PORT: u16 = 18789;
+const DEFAULT_SERVICE_PORT: u16 = 18789;
+
+/// Get the current service port from manager config
+fn get_service_port() -> u16 {
+    shell::get_gateway_port_from_config()
+}
 
 /// Check if a service is listening on the port, return PID
 /// Simple and direct: port in use = service running
@@ -123,7 +128,7 @@ pub async fn get_service_status() -> Result<ServiceStatus, String> {
         Err(_) => false,
     };
 
-    let pid = check_port_listening(SERVICE_PORT);
+    let pid = check_port_listening(get_service_port());
     
     // Gateway is running only if health check passes AND port is occupied
     let running = health_ok && pid.is_some();
@@ -131,7 +136,7 @@ pub async fn get_service_status() -> Result<ServiceStatus, String> {
     Ok(ServiceStatus {
         running,
         pid: if running { pid } else { None },
-        port: SERVICE_PORT,
+        port: get_service_port(),
         uptime_seconds: None,
         memory_mb: None,
         cpu_percent: None,
@@ -159,9 +164,9 @@ pub async fn start_service() -> Result<String, String> {
     info!("[Service] openclaw path: {:?}", openclaw_path);
 
     // Clear any processes squatting on the port (e.g. svchost.exe)
-    let squatter_pids = find_all_port_pids(SERVICE_PORT);
+    let squatter_pids = find_all_port_pids(get_service_port());
     if !squatter_pids.is_empty() {
-        info!("[Service] Found {} process(es) on port {}, killing...", squatter_pids.len(), SERVICE_PORT);
+        info!("[Service] Found {} process(es) on port {}, killing...", squatter_pids.len(), get_service_port());
         for pid in &squatter_pids {
             #[cfg(windows)]
             {
@@ -185,12 +190,12 @@ pub async fn start_service() -> Result<String, String> {
         .map_err(|e| format!("Failed to start service: {}", e))?;
 
     // Phase 1: Wait for port to become active (fast check, 1s intervals, max 15s)
-    info!("[Service] Waiting for port {} to start listening...", SERVICE_PORT);
+    info!("[Service] Waiting for port {} to start listening...", get_service_port());
     let mut port_up = false;
     for i in 1..=15 {
         std::thread::sleep(std::time::Duration::from_secs(1));
-        if check_port_listening(SERVICE_PORT).is_some() {
-            info!("[Service] Port {} is now active ({}s)", SERVICE_PORT, i);
+        if check_port_listening(get_service_port()).is_some() {
+            info!("[Service] Port {} is now active ({}s)", get_service_port(), i);
             port_up = true;
             break;
         }
@@ -203,7 +208,7 @@ pub async fn start_service() -> Result<String, String> {
     info!("[Service] Verifying gateway health...");
     std::thread::sleep(std::time::Duration::from_secs(2));
     let health_ok = shell::run_openclaw(&["gateway", "health", "--timeout", "5000"]).is_ok();
-    let pid = check_port_listening(SERVICE_PORT);
+    let pid = check_port_listening(get_service_port());
 
     if health_ok {
         info!("[Service] Gateway is healthy!");
@@ -244,7 +249,7 @@ pub async fn start_service() -> Result<String, String> {
         }
     });
 
-    if let Some(pid) = check_port_listening(SERVICE_PORT) {
+    if let Some(pid) = check_port_listening(get_service_port()) {
         Ok(format!("Service started, PID: {}", pid))
     } else {
         Ok("Service started (pid unknown)".to_string())
@@ -335,9 +340,9 @@ pub async fn restart_service() -> Result<String, String> {
     }
 
     // Step 2: Clear any remaining processes on the port
-    let squatter_pids = find_all_port_pids(SERVICE_PORT);
+    let squatter_pids = find_all_port_pids(get_service_port());
     if !squatter_pids.is_empty() {
-        info!("[Service] Clearing {} process(es) still on port {}...", squatter_pids.len(), SERVICE_PORT);
+        info!("[Service] Clearing {} process(es) still on port {}...", squatter_pids.len(), get_service_port());
         for pid in &squatter_pids {
             #[cfg(windows)]
             {
@@ -360,14 +365,14 @@ pub async fn restart_service() -> Result<String, String> {
         .map_err(|e| format!("Failed to start service: {}", e))?;
 
     // Step 4: Wait for port to become active (max 15s)
-    info!("[Service] Waiting for port {} to start listening...", SERVICE_PORT);
+    info!("[Service] Waiting for port {} to start listening...", get_service_port());
     for i in 1..=15 {
         std::thread::sleep(std::time::Duration::from_secs(1));
-        if check_port_listening(SERVICE_PORT).is_some() {
-            info!("[Service] Port {} is now active ({}s)", SERVICE_PORT, i);
+        if check_port_listening(get_service_port()).is_some() {
+            info!("[Service] Port {} is now active ({}s)", get_service_port(), i);
             // Give gateway a moment to fully initialize
             std::thread::sleep(std::time::Duration::from_secs(2));
-            if let Some(pid) = check_port_listening(SERVICE_PORT) {
+            if let Some(pid) = check_port_listening(get_service_port()) {
                 info!("[Service] Successfully restarted, PID: {}", pid);
                 return Ok(format!("Service restarted, PID: {}", pid));
             }
@@ -392,16 +397,17 @@ pub async fn get_logs(lines: Option<u32>) -> Result<Vec<String>, String> {
     }
 }
 
-/// Kill ALL processes using port 18789
+/// Kill ALL processes using the configured gateway port
 #[command]
 pub async fn kill_all_port_processes() -> Result<String, String> {
-    info!("[Service] Kill All: Finding all processes on port {}...", SERVICE_PORT);
+    let port = get_service_port();
+    info!("[Service] Kill All: Finding all processes on port {}...", port);
 
-    let pids = find_all_port_pids(SERVICE_PORT);
+    let pids = find_all_port_pids(port);
 
     if pids.is_empty() {
-        info!("[Service] Kill All: No processes found on port {}", SERVICE_PORT);
-        return Ok("No processes found on port 18789".to_string());
+        info!("[Service] Kill All: No processes found on port {}", port);
+        return Ok(format!("No processes found on port {}", port));
     }
 
     info!("[Service] Kill All: Found {} process(es): {:?}", pids.len(), pids);
@@ -456,9 +462,9 @@ pub async fn kill_all_port_processes() -> Result<String, String> {
     }
 
     let msg = if failed == 0 {
-        format!("Killed {} process(es) on port 18789", killed)
+        format!("Killed {} process(es) on port {}", killed, get_service_port())
     } else {
-        format!("Killed {}, failed to kill {} process(es) on port 18789", killed, failed)
+        format!("Killed {}, failed to kill {} process(es) on port {}", killed, failed, get_service_port())
     };
 
     info!("[Service] Kill All: {}", msg);

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import {
@@ -102,6 +103,7 @@ interface ProviderDialogProps {
 }
 
 function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }: ProviderDialogProps) {
+  const { t } = useTranslation();
   const isEditing = !!editingProvider;
   const [step, setStep] = useState<'select' | 'configure'>(isEditing ? 'configure' : 'select');
   const [selectedOfficial, setSelectedOfficial] = useState<OfficialProvider | null>(() => {
@@ -289,8 +291,8 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
           <h2 className="text-lg font-semibold text-white flex items-center gap-2">
             {isEditing ? <Settings2 size={20} className="text-claw-400" /> : <Plus size={20} className="text-claw-400" />}
             {isEditing
-              ? `Edit Provider: ${editingProvider?.name}`
-              : (step === 'select' ? 'Add AI Provider' : `Configure ${selectedOfficial?.name || 'Custom Provider'}`)}
+              ? t('aiConfig.dialog.editProvider', { name: editingProvider?.name })
+              : (step === 'select' ? t('aiConfig.dialog.addProvider') : t('aiConfig.dialog.configure', { name: selectedOfficial?.name || t('aiConfig.dialog.customProvider') }))}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white">
             ✕
@@ -310,7 +312,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
               >
                 {/* Official Providers */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-400">Official Providers</h3>
+                  <h3 className="text-sm font-medium text-gray-400">{t('aiConfig.dialog.officialProviders')}</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {officialProviders.map(provider => (
                       <button
@@ -322,7 +324,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-white truncate">{provider.name}</p>
                           <p className="text-xs text-gray-500 truncate">
-                            {provider.suggested_models.length} models
+                            {t('aiConfig.dialog.models', { count: provider.suggested_models.length })}
                           </p>
                         </div>
                         <ChevronRight size={16} className="text-gray-500 group-hover:text-claw-400 transition-colors" />
@@ -338,7 +340,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                     className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-dark-500 hover:border-claw-500/50 text-gray-400 hover:text-white transition-all"
                   >
                     <Settings2 size={18} />
-                    <span>Custom Provider (OpenAI/Anthropic API Compatible)</span>
+                    <span>{t('aiConfig.dialog.customProvider')}</span>
                   </button>
                 </div>
               </motion.div>
@@ -353,14 +355,14 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                 {/* Provider Name */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    Provider Name
-                    <span className="text-gray-600 text-xs ml-2">(For configuration identifier, e.g., anthropic-custom)</span>
+                    {t('aiConfig.dialog.providerName')}
+                    <span className="text-gray-600 text-xs ml-2">{t('aiConfig.dialog.providerNameHint')}</span>
                   </label>
                   <input
                     type="text"
                     value={providerName}
                     onChange={e => { setFormError(null); setProviderName(e.target.value); }}
-                    placeholder="e.g., anthropic-custom, my-openai"
+                    placeholder={t('aiConfig.dialog.providerNamePlaceholder')}
                     className={clsx(
                       'input-base',
                       isCustomUrlWithOfficialName && 'border-yellow-500/50'
@@ -369,20 +371,20 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                   />
                   {isEditing && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Provider name cannot be modified. Please delete and recreate if you need to change it.
+                      {t('aiConfig.dialog.providerNameEditWarning')}
                     </p>
                   )}
                   {isCustomUrlWithOfficialName && !isEditing && (
                     <div className="mt-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                       <p className="text-xs text-yellow-400">
-                        ⚠️ You are using an official Provider name but have modified the API URL. It is recommended to use a different name to avoid configuration conflicts.
+                        ⚠️ {t('aiConfig.dialog.customUrlWarning')}
                       </p>
                       <button
                         type="button"
                         onClick={handleApplySuggestedName}
                         className="mt-1 text-xs text-yellow-300 hover:text-yellow-200 underline"
                       >
-                        Use suggested name: {suggestedName}
+                        {t('aiConfig.dialog.useSuggestedName')}{suggestedName}
                       </button>
                     </div>
                   )}
@@ -390,7 +392,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
 
                 {/* API URL */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">API URL</label>
+                  <label className="block text-sm text-gray-400 mb-2">{t('aiConfig.dialog.apiUrl')}</label>
                   <input
                     type="text"
                     value={baseUrl}
@@ -403,19 +405,19 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                 {/* API Key */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    API Key
+                    {t('aiConfig.dialog.apiKey')}
                     {!selectedOfficial?.requires_api_key && (
-                      <span className="text-gray-600 text-xs ml-2">(Optional)</span>
+                      <span className="text-gray-600 text-xs ml-2">{t('aiConfig.dialog.optional')}</span>
                     )}
                   </label>
                   {/* Show current API Key status in edit mode */}
                   {isEditing && editingProvider?.has_api_key && (
                     <div className="mb-2 flex items-center gap-2 text-sm">
-                      <span className="text-gray-500">Current:</span>
+                      <span className="text-gray-500">{t('aiConfig.dialog.current')}</span>
                       <code className="px-2 py-0.5 bg-dark-600 rounded text-gray-400">
                         {editingProvider.api_key_masked}
                       </code>
-                      <span className="text-green-400 text-xs">✓ Configured</span>
+                      <span className="text-green-400 text-xs">✓ {t('aiConfig.dialog.configured')}</span>
                     </div>
                   )}
                   <div className="relative">
@@ -424,7 +426,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                       value={apiKey}
                       onChange={e => setApiKey(e.target.value)}
                       placeholder={isEditing && editingProvider?.has_api_key
-                        ? "Leave empty to keep existing API Key, or enter a new one"
+                        ? t('aiConfig.dialog.apiKeyPlaceholder')
                         : "sk-..."}
                       className="input-base pr-10"
                     />
@@ -438,30 +440,30 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                   </div>
                   {isEditing && editingProvider?.has_api_key && (
                     <p className="text-xs text-gray-500 mt-1">
-                      💡 Leave empty if you don't need to change the API Key
+                      💡 {t('aiConfig.dialog.apiKeyHint')}
                     </p>
                   )}
                 </div>
 
                 {/* API Type */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">API Type</label>
+                  <label className="block text-sm text-gray-400 mb-2">{t('aiConfig.dialog.apiType')}</label>
                   <select
                     value={apiType}
                     onChange={e => setApiType(e.target.value)}
                     className="input-base"
                   >
-                    <option value="openai-completions">OpenAI Compatible (openai-completions)</option>
-                    <option value="anthropic-messages">Anthropic Compatible (anthropic-messages)</option>
+                    <option value="openai-completions">{t('aiConfig.dialog.openaiCompatible')}</option>
+                    <option value="anthropic-messages">{t('aiConfig.dialog.anthropicCompatible')}</option>
                   </select>
                 </div>
 
                 {/* Model Selection */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    Select Models
+                    {t('aiConfig.dialog.selectModels')}
                     <span className="text-gray-600 text-xs ml-2">
-                      ({selectedModels.length} selected)
+                      ({t('aiConfig.dialog.selected', { count: selectedModels.length })})
                     </span>
                   </label>
 
@@ -486,7 +488,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                             )}>
                               {model.name}
                               {model.recommended && (
-                                <span className="ml-2 text-xs text-claw-400">Recommended</span>
+                                <span className="ml-2 text-xs text-claw-400">{t('aiConfig.dialog.recommended')}</span>
                               )}
                             </p>
                             {model.description && (
@@ -507,7 +509,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                       type="text"
                       value={customModelId}
                       onChange={e => setCustomModelId(e.target.value)}
-                      placeholder="Enter custom model ID"
+                      placeholder={t('aiConfig.dialog.customModelPlaceholder')}
                       className="input-base flex-1"
                       onKeyDown={e => e.key === 'Enter' && addCustomModel()}
                     />
@@ -548,27 +550,27 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium text-white flex items-center gap-2">
                           <Server size={16} className="text-claw-400" />
-                          Ollama Setup
+                          {t('aiConfig.dialog.ollamaSetup')}
                         </h4>
                         {isOllamaInstalled === null ? (
-                          <span className="text-xs text-gray-500">Checking...</span>
+                          <span className="text-xs text-gray-500">{t('aiConfig.dialog.checking')}</span>
                         ) : isOllamaInstalled ? (
-                          <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle size={12} /> Installed</span>
+                          <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle size={12} /> {t('aiConfig.dialog.installed')}</span>
                         ) : (
-                          <span className="text-xs text-yellow-400 flex items-center gap-1"><XCircle size={12} /> Not installed</span>
+                          <span className="text-xs text-yellow-400 flex items-center gap-1"><XCircle size={12} /> {t('aiConfig.dialog.notInstalled')}</span>
                         )}
                       </div>
 
                       {isOllamaInstalled === false && (
                         <div className="text-sm text-gray-400 flex flex-col gap-2">
-                          <p>Ollama was not detected on your system. You'll need to install it to run models locally.</p>
+                          <p>{t('aiConfig.dialog.ollamaMissing')}</p>
                           <a
                             href="https://ollama.com/download"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn-primary py-2 text-center"
                           >
-                            Install Ollama
+                            {t('aiConfig.dialog.installOllama')}
                           </a>
                         </div>
                       )}
@@ -577,7 +579,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                         <>
                           {installedOllamaModels.length > 0 && (
                             <div className="space-y-2">
-                              <p className="text-xs text-gray-400">Detected Local Models:</p>
+                              <p className="text-xs text-gray-400">{t('aiConfig.dialog.localModels')}</p>
                               <div className="flex flex-wrap gap-2">
                                 {installedOllamaModels.map(m => (
                                   <button
@@ -602,13 +604,13 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                           )}
 
                           <div className="pt-2 border-t border-dark-600">
-                            <p className="text-xs text-gray-400 mb-2">Install a new model (e.g., qwen3.5:9b, llama3)</p>
+                            <p className="text-xs text-gray-400 mb-2">{t('aiConfig.dialog.installNewModel')}</p>
                             <div className="flex gap-2">
                               <input
                                 type="text"
                                 value={ollamaTargetModel}
                                 onChange={e => setOllamaTargetModel(e.target.value)}
-                                placeholder="Model name"
+                                placeholder={t('aiConfig.dialog.modelName')}
                                 className="input-base flex-1 text-sm py-1.5"
                                 onKeyDown={async (e) => {
                                   if (e.key === 'Enter' && ollamaTargetModel && !installingOllamaModel) {
@@ -654,12 +656,12 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                                 disabled={!ollamaTargetModel || installingOllamaModel}
                                 className="btn-secondary px-3 py-1.5 text-sm whitespace-nowrap"
                               >
-                                {installingOllamaModel ? <Loader2 size={14} className="animate-spin" /> : 'Pull Model'}
+                                {installingOllamaModel ? <Loader2 size={14} className="animate-spin" /> : t('aiConfig.dialog.pullModel')}
                               </button>
                             </div>
                             {installingOllamaModel && (
                               <p className="text-xs text-claw-400 mt-2 flex items-center gap-1 animate-pulse">
-                                <Loader2 size={12} className="animate-spin" /> Downloading model... this may take a few minutes depending on your internet connection and model size.
+                                <Loader2 size={12} className="animate-spin" /> {t('aiConfig.dialog.downloading')}
                               </p>
                             )}
                           </div>
@@ -678,7 +680,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                     className="inline-flex items-center gap-1 text-sm text-claw-400 hover:text-claw-300"
                   >
                     <ExternalLink size={14} />
-                    View Official Documentation
+                    {t('aiConfig.dialog.viewDocs')}
                   </a>
                 )}
 
@@ -704,30 +706,29 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                     className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg space-y-3"
                   >
                     <p className="text-yellow-400 text-sm">
-                      ⚠️ You are using the official Provider name "{providerName}" but have modified the API URL.
-                      This may cause the configuration to be overridden by OpenClaw's built-in settings.
+                      ⚠️ {t('aiConfig.dialog.customUrlWarning')}
                     </p>
                     <p className="text-yellow-300 text-sm">
-                      It is recommended to use a different name, such as "{suggestedName}"
+                      {t('aiConfig.dialog.useSuggestedName')}"{suggestedName}"
                     </p>
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={handleApplySuggestedName}
                         className="btn-secondary text-sm py-2 px-3"
                       >
-                        Use Suggested Name
+                        {t('aiConfig.dialog.useSuggested')}
                       </button>
                       <button
                         onClick={() => handleSave(true)}
                         className="btn-primary text-sm py-2 px-3"
                       >
-                        Save Anyway
+                        {t('aiConfig.dialog.saveAnyway')}
                       </button>
                       <button
                         onClick={() => setShowCustomUrlWarning(false)}
                         className="text-sm text-gray-400 hover:text-white px-3"
                       >
-                        Cancel
+                        {t('aiConfig.dialog.cancel')}
                       </button>
                     </div>
                   </motion.div>
@@ -744,13 +745,13 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
               onClick={() => setStep('select')}
               className="btn-secondary"
             >
-              Back
+              {t('aiConfig.dialog.back')}
             </button>
           )}
           <div className="flex-1" />
           <div className="flex gap-3">
             <button onClick={onClose} className="btn-secondary">
-              Cancel
+              {t('aiConfig.dialog.cancel')}
             </button>
             {step === 'configure' && !showCustomUrlWarning && (
               <button
@@ -759,7 +760,7 @@ function ProviderDialog({ officialProviders, onClose, onSave, editingProvider }:
                 className="btn-primary flex items-center gap-2"
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                {isEditing ? 'Update' : 'Save'}
+                {isEditing ? t('aiConfig.dialog.update') : t('aiConfig.dialog.save')}
               </button>
             )}
           </div>
@@ -780,6 +781,7 @@ interface ProviderCardProps {
 }
 
 function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, onEdit }: ProviderCardProps) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -835,19 +837,19 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
             <h3 className="font-medium text-white">{provider.name}</h3>
             {provider.has_api_key && (
               <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-xs rounded">
-                Configured
+                {t('aiConfig.card.configured')}
               </span>
             )}
             {isCustomUrl && (
               <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">
-                Custom URL
+                {t('aiConfig.card.customUrl')}
               </span>
             )}
           </div>
           <p className="text-xs text-gray-500 truncate">{provider.base_url}</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">{provider.models.length} models</span>
+          <span className="text-sm text-gray-500">{t('aiConfig.card.models', { count: provider.models.length })}</span>
           <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
             <ChevronDown size={18} className="text-gray-500" />
           </motion.div>
@@ -867,7 +869,7 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
               {/* API Key Information */}
               {provider.api_key_masked && (
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">API Key:</span>
+                  <span className="text-gray-500">{t('aiConfig.card.apiKey')}</span>
                   <code className="px-2 py-0.5 bg-dark-600 rounded text-gray-400">
                     {provider.api_key_masked}
                   </code>
@@ -896,7 +898,7 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
                           {model.name}
                           {model.is_primary && (
                             <span className="ml-2 text-xs text-claw-400">
-                              <Star size={12} className="inline -mt-0.5" /> Primary Model
+                              <Star size={12} className="inline -mt-0.5" /> {t('aiConfig.card.primaryModel')}
                             </span>
                           )}
                         </p>
@@ -908,7 +910,7 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
                         onClick={() => onSetPrimary(model.full_id)}
                         className="text-xs text-gray-500 hover:text-claw-400 transition-colors"
                       >
-                        Set as Primary
+                        {t('aiConfig.card.setPrimary')}
                       </button>
                     )}
                   </div>
@@ -937,14 +939,14 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
                       className="btn-primary text-sm py-2 px-3 bg-red-500 hover:bg-red-600 flex items-center gap-1"
                     >
                       {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                      Confirm Delete
+                      {t('aiConfig.card.confirmDelete')}
                     </button>
                     <button
                       onClick={handleDeleteCancel}
                       disabled={deleting}
                       className="btn-secondary text-sm py-2 px-3"
                     >
-                      Cancel
+                      {t('aiConfig.card.cancel')}
                     </button>
                   </div>
                 </motion.div>
@@ -961,7 +963,7 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
                     className="flex items-center gap-1 text-sm text-claw-400 hover:text-claw-300 transition-colors"
                   >
                     <Pencil size={14} />
-                    Edit Provider
+                    {t('aiConfig.card.editProvider')}
                   </button>
                   <button
                     onClick={handleDeleteClick}
@@ -969,7 +971,7 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
                     className="flex items-center gap-1 text-sm text-red-400 hover:text-red-300 transition-colors"
                   >
                     {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    Delete Provider
+                    {t('aiConfig.card.deleteProvider')}
                   </button>
                 </div>
               )}
@@ -984,6 +986,7 @@ function ProviderCard({ provider, officialProviders, onSetPrimary, onRefresh, on
 // ============ Main Component ============
 
 export function AIConfig() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [officialProviders, setOfficialProviders] = useState<OfficialProvider[]>([]);
   const [aiConfig, setAiConfig] = useState<AIConfigOverview | null>(null);
@@ -1096,19 +1099,19 @@ export function AIConfig() {
             <div>
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Sparkles size={22} className="text-claw-400" />
-                AI Model Configuration
+                {t('aiConfig.title')}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Manage AI Providers and models used by OpenClaw
+                {t('aiConfig.desc')}
               </p>
             </div>
-            <button
-              onClick={() => setShowAddDialog(true)}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Add Provider
-            </button>
+              <button
+                onClick={() => setShowAddDialog(true)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus size={16} />
+                {t('aiConfig.addProvider')}
+              </button>
           </div>
 
           {/* Primary Model Display */}
@@ -1117,11 +1120,11 @@ export function AIConfig() {
               <Star size={24} className="text-claw-400" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-400">Current Primary Model</p>
+              <p className="text-sm text-gray-400">{t('aiConfig.currentPrimary')}</p>
               {aiConfig?.primary_model ? (
                 <p className="text-lg font-medium text-white">{aiConfig.primary_model}</p>
               ) : (
-                <p className="text-lg text-gray-500">Not Set</p>
+                <p className="text-lg text-gray-500">{t('aiConfig.notSet')}</p>
               )}
             </div>
             <div className="text-right mr-4">

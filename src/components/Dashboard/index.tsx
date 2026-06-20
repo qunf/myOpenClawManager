@@ -131,7 +131,7 @@ export function Dashboard({ envStatus, onSetupComplete }: DashboardProps) {
 
         {/* Service status card */}
         <motion.div variants={itemVariants}>
-          <StatusCard status={status} loading={loading} />
+          <StatusCard status={status} loading={loading} onPortChange={fetchStatus} />
         </motion.div>
 
         {/* Quick actions */}

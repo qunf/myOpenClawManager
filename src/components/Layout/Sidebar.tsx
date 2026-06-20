@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { PageType } from '../../App';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 interface ServiceStatus {
   running: boolean;
@@ -25,19 +26,20 @@ interface SidebarProps {
   serviceStatus: ServiceStatus | null;
 }
 
-const menuItems: { id: PageType; label: string; icon: React.ElementType }[] = [
-  { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-  { id: 'mcp', label: 'MCPs', icon: Blocks },
-  { id: 'skills', label: 'Skills', icon: Book },
-  { id: 'agents', label: 'Agents', icon: Users },
-  { id: 'ai', label: 'AI Config', icon: Bot },
-  { id: 'channels', label: 'Channels', icon: MessageSquare },
+const menuItems: { id: PageType; labelKey: string; icon: React.ElementType }[] = [
+  { id: 'dashboard', labelKey: 'sidebar.overview', icon: LayoutDashboard },
+  { id: 'mcp', labelKey: 'sidebar.mcp', icon: Blocks },
+  { id: 'skills', labelKey: 'sidebar.skills', icon: Book },
+  { id: 'agents', labelKey: 'sidebar.agents', icon: Users },
+  { id: 'ai', labelKey: 'sidebar.aiConfig', icon: Bot },
+  { id: 'channels', labelKey: 'sidebar.channels', icon: MessageSquare },
 
-  { id: 'logs', label: 'Logs', icon: ScrollText },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'logs', labelKey: 'sidebar.logs', icon: ScrollText },
+  { id: 'settings', labelKey: 'sidebar.settings', icon: Settings },
 ];
 
 export function Sidebar({ currentPage, onNavigate, serviceStatus }: SidebarProps) {
+  const { t } = useTranslation();
   const isRunning = serviceStatus?.running ?? false;
   return (
     <aside className="w-64 bg-dark-800 border-r border-dark-600 flex flex-col">
@@ -48,8 +50,8 @@ export function Sidebar({ currentPage, onNavigate, serviceStatus }: SidebarProps
             <span className="text-lg">🦞</span>
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-white">OpenClaw</h1>
-            <p className="text-xs text-gray-500">Manager</p>
+            <h1 className="text-sm font-semibold text-white">{t('sidebar.openclaw')}</h1>
+            <p className="text-xs text-gray-500">{t('sidebar.manager')}</p>
           </div>
         </div>
       </div>
@@ -80,7 +82,7 @@ export function Sidebar({ currentPage, onNavigate, serviceStatus }: SidebarProps
                     />
                   )}
                   <Icon size={18} className={isActive ? 'text-claw-400' : ''} />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 </button>
               </li>
             );
@@ -94,10 +96,10 @@ export function Sidebar({ currentPage, onNavigate, serviceStatus }: SidebarProps
           <div className="flex items-center gap-2 mb-2">
             <div className={clsx('status-dot', isRunning ? 'running' : 'stopped')} />
             <span className="text-xs text-gray-400">
-              {isRunning ? 'Service Running' : 'Service Stopped'}
+              {isRunning ? t('sidebar.serviceRunning') : t('sidebar.serviceStopped')}
             </span>
           </div>
-          <p className="text-xs text-gray-500">Port: {serviceStatus?.port ?? 18789}</p>
+          <p className="text-xs text-gray-500">{t('sidebar.port')}: {serviceStatus?.port ?? 18789}</p>
         </div>
       </div>
     </aside>

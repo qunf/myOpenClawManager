@@ -199,7 +199,8 @@ pub async fn get_dashboard_url() -> Result<String, String> {
     info!("[Dashboard URL] Getting Dashboard URL...");
 
     let token = get_or_create_gateway_token().await?;
-    let url = format!("http://localhost:18789?token={}", token);
+    let port = get_gateway_port().await.unwrap_or(18789);
+    let url = format!("http://localhost:{}?token={}", port, token);
 
     info!("[Dashboard URL] URL generated");
     Ok(url)
@@ -3844,4 +3845,57 @@ pub async fn import_config(path: String) -> Result<String, String> {
     save_openclaw_config(&new_config)?;
 
     Ok("Configuration imported successfully".to_string())
+}
+
+// ============ Custom OpenClaw Path & Port (manager.json) ============
+
+/// Get custom openclaw path from manager.json
+#[command]
+pub async fn get_custom_openclaw_path() -> Result<Option<String>, String> {
+    info!("[Custom Path] Getting custom openclaw path...");
+    let config = load_manager_config()?;
+    let path = config.pointer("/openclaw_path")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    info!("[Custom Path] Custom path: {:?}", path);
+    Ok(path)
+}
+
+/// Save custom openclaw path to manager.json
+#[command]
+pub async fn save_custom_openclaw_path(path: Option<String>) -> Result<String, String> {
+    info!("[Custom Path] Saving custom openclaw path: {:?}", path);
+    let mut config = load_manager_config()?;
+
+    if let Some(p) = path {
+        config["openclaw_path"] = json!(p);
+    } else {
+        config.as_object_mut().map(|o| o.remove("openclaw_path"));
+    }
+
+    save_manager_config(&config)?;
+    Ok("Custom openclaw path saved".to_string())
+}
+
+/// Get gateway port from manager.json (default 18789)
+#[command]
+pub async fn get_gateway_port() -> Result<u16, String> {
+    info!("[Gateway Port] Getting gateway port...");
+    let config = load_manager_config()?;
+    let port = config.pointer("/gateway_port")
+        .and_then(|v| v.as_u64())
+        .map(|v| v as u16)
+        .unwrap_or(18789);
+    info!("[Gateway Port] Port: {}", port);
+    Ok(port)
+}
+
+/// Save gateway port to manager.json
+#[command]
+pub async fn save_gateway_port(port: u16) -> Result<String, String> {
+    info!("[Gateway Port] Saving gateway port: {}", port);
+    let mut config = load_manager_config()?;
+    config["gateway_port"] = json!(port);
+    save_manager_config(&config)?;
+    Ok("Gateway port saved".to_string())
 }

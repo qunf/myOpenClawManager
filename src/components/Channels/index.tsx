@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import {
@@ -42,12 +43,13 @@ const DmAllowListEditor = ({
   botToken?: string,
   placeholderText?: string
 }) => {
+  const { t } = useTranslation();
   const [inputVal, setInputVal] = useState('');
   const [fetching, setFetching] = useState(false);
   const [discovered, setDiscovered] = useState<{ id: string; name: string; username?: string }[]>([]);
 
   const fetchUsers = async () => {
-    if (!botToken) { alert('Bot Token is required.'); return; }
+    if (!botToken) { alert(t('channels.errors.botTokenRequired')); return; }
     setFetching(true);
     setDiscovered([]);
     try {
@@ -71,7 +73,7 @@ const DmAllowListEditor = ({
       const discoveredList = Array.from(userMap.values());
       setDiscovered(discoveredList);
       if (discoveredList.length === 0) {
-        alert('No users found. Make sure someone has sent a message to this bot first (e.g. /start).');
+        alert(t('channels.dmAllowlist.noUsersFound'));
       } else {
         // Auto-add all discovered users to the allowlist
         const newIds = discoveredList.map(u => u.id).filter(id => !allowedUsers.includes(id));
@@ -80,7 +82,7 @@ const DmAllowListEditor = ({
         }
       }
     } catch (e) {
-      alert('Failed to fetch users: ' + e);
+      alert(t('channels.errors.fetchUsersFailed') + e);
     } finally {
       setFetching(false);
     }
@@ -100,21 +102,21 @@ const DmAllowListEditor = ({
   return (
     <div className="p-3 bg-dark-600 rounded-lg border border-dark-500 space-y-2 mt-3">
       <div className="flex items-center justify-between">
-        <label className="text-xs text-gray-400 font-semibold">Allowed DM Users (User ID)</label>
+        <label className="text-xs text-gray-400 font-semibold">{t('channels.dmAllowlist.label')}</label>
         <button
           onClick={fetchUsers}
           disabled={fetching || !botToken}
           className="btn-secondary text-[10px] py-0.5 px-2 flex items-center gap-1"
-          title="Fetch users who have messaged this bot"
+          title={t('channels.dmAllowlist.fetchTitle')}
         >
           {fetching ? <Loader2 size={10} className="animate-spin" /> : <Users size={10} />}
-          Fetch Users
+          {t('channels.dmAllowlist.fetchBtn')}
         </button>
       </div>
 
       {discovered.length > 0 && (
         <div className="space-y-1 p-2 bg-dark-700 rounded-lg border border-indigo-500/30">
-          <p className="text-[10px] text-indigo-400 font-semibold mb-1">Discovered Users (click + to add)</p>
+          <p className="text-[10px] text-indigo-400 font-semibold mb-1">{t('channels.dmAllowlist.discoveredTitle')}</p>
           {discovered.map(u => {
             const alreadyAdded = allowedUsers.includes(u.id);
             return (
@@ -125,7 +127,7 @@ const DmAllowListEditor = ({
                   <span className="font-mono text-gray-400 text-[10px]">{u.id}</span>
                 </div>
                 {alreadyAdded ? (
-                  <span className="text-green-400 text-[10px] flex items-center gap-0.5"><Check size={10} /> Added</span>
+                  <span className="text-green-400 text-[10px] flex items-center gap-0.5"><Check size={10} /> {t('channels.dmAllowlist.added')}</span>
                 ) : (
                   <button
                     onClick={() => addUser(u.id)}
@@ -182,7 +184,7 @@ const DmAllowListEditor = ({
           </p>
         )}
       </div>
-      <p className="text-[10px] text-gray-500">Saved per-account as <code className="px-1 py-0.5 bg-dark-500 rounded">allowFrom</code>. Inherited from primary bot if empty.</p>
+      <p className="text-[10px] text-gray-500">{t('channels.dmAllowlist.savedAs')}</p>
     </div>
   );
 };
@@ -210,7 +212,7 @@ interface ChannelField {
   required?: boolean;
 }
 
-const channelInfo: Record<
+const getChannelInfo = (t: (key: string) => string): Record<
   string,
   {
     name: string;
@@ -219,160 +221,160 @@ const channelInfo: Record<
     fields: ChannelField[];
     helpText?: string;
   }
-> = {
+> => ({
   telegram: {
-    name: 'Telegram',
+    name: t('channels.channelInfo.telegram.name'),
     icon: <MessageCircle size={20} />,
     color: 'text-blue-400',
     fields: [
-      { key: 'botToken', label: 'Bot Token', type: 'password', placeholder: 'Get from @BotFather', required: true },
-      { key: 'userId', label: 'User ID', type: 'text', placeholder: 'Your Telegram User ID', required: true },
+      { key: 'botToken', label: t('channels.fields.botToken'), type: 'password', placeholder: t('channels.placeholder.getFromBotFather'), required: true },
+      { key: 'userId', label: t('channels.fields.userId'), type: 'text', placeholder: t('channels.placeholder.telegramUserId'), required: true },
       {
-        key: 'dmPolicy', label: 'DM Policy', type: 'select', options: [
-          { value: 'pairing', label: 'Pairing Mode' },
-          { value: 'open', label: 'Open Mode' },
-          { value: 'disabled', label: 'Disabled' },
+        key: 'dmPolicy', label: t('channels.policies.dmPolicy'), type: 'select', options: [
+          { value: 'pairing', label: t('channels.policies.pairing') },
+          { value: 'open', label: t('channels.policies.open') },
+          { value: 'disabled', label: t('channels.policies.disabled') },
         ]
       },
       {
-        key: 'groupPolicy', label: 'Group Policy', type: 'select', options: [
-          { value: 'open', label: 'Enabled (Respond to all)' },
-          { value: 'allowlist', label: 'Allowlist (Explicitly allowed only)' },
-          { value: 'disabled', label: 'Disabled (Ignore all)' },
+        key: 'groupPolicy', label: t('channels.policies.groupPolicy'), type: 'select', options: [
+          { value: 'open', label: t('channels.policies.enabled') },
+          { value: 'allowlist', label: t('channels.policies.allowlist') },
+          { value: 'disabled', label: t('channels.policies.disabled') + ' (' + t('channels.policies.allIgnore') + ')' },
         ]
       },
       {
-        key: 'streamMode', label: 'Stream Mode', type: 'select', options: [
-          { value: 'partial', label: 'Partial (Default)' },
-          { value: 'block', label: 'Block' },
-          { value: 'off', label: 'Off' },
+        key: 'streamMode', label: t('channels.fields.streamMode'), type: 'select', options: [
+          { value: 'partial', label: t('channels.policies.partial') },
+          { value: 'block', label: t('channels.policies.block') },
+          { value: 'off', label: t('channels.policies.off') },
         ]
       },
     ],
-    helpText: '1. Search @BotFather and send /newbot to get Token  2. Search @userinfobot to get User ID',
+    helpText: t('channels.channelInfo.telegram.help'),
   },
   discord: {
-    name: 'Discord',
+    name: t('channels.channelInfo.discord.name'),
     icon: <Hash size={20} />,
     color: 'text-indigo-400',
     fields: [
-      { key: 'botToken', label: 'Bot Token', type: 'password', placeholder: 'Discord Bot Token', required: true },
-      { key: 'testChannelId', label: 'Test Channel ID', type: 'text', placeholder: 'Channel ID for sending test messages (optional)' },
+      { key: 'botToken', label: t('channels.fields.botToken'), type: 'password', placeholder: t('channels.placeholder.discordBotToken'), required: true },
+      { key: 'testChannelId', label: t('channels.fields.testChannelId'), type: 'text', placeholder: t('channels.placeholder.testChannelOptional') },
       {
-        key: 'dmPolicy', label: 'DM Policy', type: 'select', options: [
-          { value: 'pairing', label: 'Pairing Mode' },
-          { value: 'open', label: 'Open Mode' },
-          { value: 'disabled', label: 'Disabled' },
+        key: 'dmPolicy', label: t('channels.policies.dmPolicy'), type: 'select', options: [
+          { value: 'pairing', label: t('channels.policies.pairing') },
+          { value: 'open', label: t('channels.policies.open') },
+          { value: 'disabled', label: t('channels.policies.disabled') },
         ]
       },
     ],
-    helpText: 'Get from Discord Developer Portal, enable Developer Mode to copy Channel ID',
+    helpText: t('channels.channelInfo.discord.help'),
   },
   slack: {
-    name: 'Slack',
+    name: t('channels.channelInfo.slack.name'),
     icon: <Slack size={20} />,
     color: 'text-purple-400',
     fields: [
-      { key: 'botToken', label: 'Bot Token', type: 'password', placeholder: 'xoxb-...', required: true },
-      { key: 'appToken', label: 'App Token', type: 'password', placeholder: 'xapp-...' },
-      { key: 'testChannelId', label: 'Test Channel ID', type: 'text', placeholder: 'Channel ID for sending test messages (optional)' },
+      { key: 'botToken', label: t('channels.fields.botToken'), type: 'password', placeholder: t('channels.placeholder.slackBotToken'), required: true },
+      { key: 'appToken', label: t('channels.fields.appToken'), type: 'password', placeholder: t('channels.placeholder.slackAppToken') },
+      { key: 'testChannelId', label: t('channels.fields.testChannelId'), type: 'text', placeholder: t('channels.placeholder.testChannelOptional') },
     ],
-    helpText: 'Get from Slack API dashboard, Channel ID can be copied from channel details',
+    helpText: t('channels.channelInfo.slack.help'),
   },
   feishu: {
-    name: 'Feishu',
+    name: t('channels.channelInfo.feishu.name'),
     icon: <MessagesSquare size={20} />,
     color: 'text-blue-500',
     fields: [
-      { key: 'appId', label: 'App ID', type: 'text', placeholder: 'Feishu App ID', required: true },
-      { key: 'appSecret', label: 'App Secret', type: 'password', placeholder: 'Feishu App Secret', required: true },
-      { key: 'testChatId', label: 'Test Chat ID', type: 'text', placeholder: 'Group/User ID for sending test messages (optional)' },
+      { key: 'appId', label: t('channels.fields.appId'), type: 'text', placeholder: t('channels.placeholder.feishuAppId'), required: true },
+      { key: 'appSecret', label: t('channels.fields.appSecret'), type: 'password', placeholder: t('channels.placeholder.feishuAppSecret'), required: true },
+      { key: 'testChatId', label: t('channels.fields.testChatId'), type: 'text', placeholder: t('channels.placeholder.testChatOptional') },
       {
-        key: 'connectionMode', label: 'Connection Mode', type: 'select', options: [
-          { value: 'websocket', label: 'WebSocket (Recommended)' },
-          { value: 'webhook', label: 'Webhook' },
+        key: 'connectionMode', label: t('channels.fields.connectionMode'), type: 'select', options: [
+          { value: 'websocket', label: t('channels.policies.websocket') },
+          { value: 'webhook', label: t('channels.policies.webhook') },
         ]
       },
       {
-        key: 'domain', label: 'Deployment Region', type: 'select', options: [
-          { value: 'feishu', label: 'China (feishu.cn)' },
-          { value: 'lark', label: 'International (larksuite.com)' },
+        key: 'domain', label: t('channels.fields.domain'), type: 'select', options: [
+          { value: 'feishu', label: t('channels.policies.feishuChina') },
+          { value: 'lark', label: t('channels.policies.feishuInternational') },
         ]
       },
       {
-        key: 'requireMention', label: 'Require @Mention', type: 'select', options: [
-          { value: 'true', label: 'Yes' },
-          { value: 'false', label: 'No' },
+        key: 'requireMention', label: t('channels.fields.requireMention'), type: 'select', options: [
+          { value: 'true', label: t('channels.policies.yes') },
+          { value: 'false', label: t('channels.policies.no') },
         ]
       },
     ],
-    helpText: 'Get credentials from Feishu Open Platform, Chat ID can be found in group settings',
+    helpText: t('channels.channelInfo.feishu.help'),
   },
   imessage: {
-    name: 'iMessage',
+    name: t('channels.channelInfo.imessage.name'),
     icon: <Apple size={20} />,
     color: 'text-green-400',
     fields: [
       {
-        key: 'dmPolicy', label: 'DM Policy', type: 'select', options: [
-          { value: 'pairing', label: 'Pairing Mode' },
-          { value: 'open', label: 'Open Mode' },
-          { value: 'disabled', label: 'Disabled' },
+        key: 'dmPolicy', label: t('channels.policies.dmPolicy'), type: 'select', options: [
+          { value: 'pairing', label: t('channels.policies.pairing') },
+          { value: 'open', label: t('channels.policies.open') },
+          { value: 'disabled', label: t('channels.policies.disabled') },
         ]
       },
       {
-        key: 'groupPolicy', label: 'Group Policy', type: 'select', options: [
-          { value: 'open', label: 'Enabled (Respond to all)' },
-          { value: 'allowlist', label: 'Allowlist (Explicitly allowed only)' },
-          { value: 'disabled', label: 'Disabled (Ignore all)' },
+        key: 'groupPolicy', label: t('channels.policies.groupPolicy'), type: 'select', options: [
+          { value: 'open', label: t('channels.policies.enabled') },
+          { value: 'allowlist', label: t('channels.policies.allowlist') },
+          { value: 'disabled', label: t('channels.policies.disabled') + ' (' + t('channels.policies.allIgnore') + ')' },
         ]
       },
     ],
-    helpText: 'macOS only, requires Messages access permission',
+    helpText: t('channels.channelInfo.imessage.help'),
   },
   whatsapp: {
-    name: 'WhatsApp',
+    name: t('channels.channelInfo.whatsapp.name'),
     icon: <MessageCircle size={20} />,
     color: 'text-green-500',
     fields: [
       {
-        key: 'dmPolicy', label: 'DM Policy', type: 'select', options: [
-          { value: 'pairing', label: 'Pairing Mode' },
-          { value: 'open', label: 'Open Mode' },
-          { value: 'disabled', label: 'Disabled' },
+        key: 'dmPolicy', label: t('channels.policies.dmPolicy'), type: 'select', options: [
+          { value: 'pairing', label: t('channels.policies.pairing') },
+          { value: 'open', label: t('channels.policies.open') },
+          { value: 'disabled', label: t('channels.policies.disabled') },
         ]
       },
       {
-        key: 'groupPolicy', label: 'Group Policy', type: 'select', options: [
-          { value: 'open', label: 'Enabled (Respond to all)' },
-          { value: 'allowlist', label: 'Allowlist (Explicitly allowed only)' },
-          { value: 'disabled', label: 'Disabled (Ignore all)' },
+        key: 'groupPolicy', label: t('channels.policies.groupPolicy'), type: 'select', options: [
+          { value: 'open', label: t('channels.policies.enabled') },
+          { value: 'allowlist', label: t('channels.policies.allowlist') },
+          { value: 'disabled', label: t('channels.policies.disabled') + ' (' + t('channels.policies.allIgnore') + ')' },
         ]
       },
     ],
-    helpText: 'Requires QR code scan to login, run: openclaw channels login --channel whatsapp',
+    helpText: t('channels.channelInfo.whatsapp.help'),
   },
   wechat: {
-    name: 'WeChat',
+    name: t('channels.channelInfo.wechat.name'),
     icon: <MessageSquare size={20} />,
     color: 'text-green-600',
     fields: [
-      { key: 'appId', label: 'App ID', type: 'text', placeholder: 'WeChat Open Platform App ID' },
-      { key: 'appSecret', label: 'App Secret', type: 'password', placeholder: 'WeChat Open Platform App Secret' },
+      { key: 'appId', label: t('channels.fields.appId'), type: 'text', placeholder: t('channels.placeholder.wechatAppId') },
+      { key: 'appSecret', label: t('channels.fields.appSecret'), type: 'password', placeholder: t('channels.placeholder.wechatAppSecret') },
     ],
-    helpText: 'WeChat Official Account/Enterprise WeChat configuration',
+    helpText: t('channels.channelInfo.wechat.help'),
   },
   dingtalk: {
-    name: 'DingTalk',
+    name: t('channels.channelInfo.dingtalk.name'),
     icon: <Bell size={20} />,
     color: 'text-blue-600',
     fields: [
-      { key: 'appKey', label: 'App Key', type: 'text', placeholder: 'DingTalk App Key' },
-      { key: 'appSecret', label: 'App Secret', type: 'password', placeholder: 'DingTalk App Secret' },
+      { key: 'appKey', label: t('channels.fields.appKey'), type: 'text', placeholder: t('channels.placeholder.dingtalkAppKey') },
+      { key: 'appSecret', label: t('channels.fields.appSecret'), type: 'password', placeholder: t('channels.placeholder.dingtalkAppSecret') },
     ],
-    helpText: 'Get from DingTalk Open Platform',
+    helpText: t('channels.channelInfo.dingtalk.help'),
   },
-};
+});
 
 interface TestResult {
   success: boolean;
@@ -381,6 +383,7 @@ interface TestResult {
 }
 
 export function Channels() {
+  const { t } = useTranslation();
   const [channels, setChannels] = useState<ChannelConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
@@ -469,7 +472,7 @@ export function Channels() {
       // Refresh plugin status
       await checkFeishuPlugin();
     } catch (e) {
-      alert('Installation failed: ' + e);
+      alert(t('channels.installFailed') + e);
     } finally {
       setFeishuPluginInstalling(false);
     }
@@ -486,7 +489,7 @@ export function Channels() {
     if (!selectedChannel) return;
 
     const channel = channels.find((c) => c.id === selectedChannel);
-    const channelName = channel ? channelInfo[channel.channel_type]?.name || channel.channel_type : selectedChannel;
+    const channelName = channel ? getChannelInfo(t)[channel.channel_type]?.name || channel.channel_type : selectedChannel;
 
     setShowClearConfirm(false);
     setClearing(true);
@@ -498,13 +501,13 @@ export function Channels() {
       await fetchChannels();
       setTestResult({
         success: true,
-        message: `${channelName} configuration cleared`,
+        message: t('channels.clearSuccess', { name: channelName }),
         error: null,
       });
     } catch (e) {
       setTestResult({
         success: false,
-        message: 'Clear failed',
+        message: t('channels.clearFailed'),
         error: String(e),
       });
     } finally {
@@ -535,7 +538,7 @@ export function Channels() {
     } catch (e) {
       setTestResult({
         success: false,
-        message: 'Test failed',
+        message: t('channels.testFailed'),
         error: String(e),
       });
     } finally {
@@ -565,7 +568,7 @@ export function Channels() {
             await fetchChannels();
             setTestResult({
               success: true,
-              message: 'WhatsApp login successful!',
+              message: t('channels.whatsapp.loginSuccess'),
               error: null,
             });
           }
@@ -580,9 +583,9 @@ export function Channels() {
         setLoginLoading(false);
       }, 60000);
 
-      alert('Please scan the QR code in the popup terminal window to complete login\n\nThe interface will update automatically after successful login');
+      alert(t('channels.whatsapp.loginHint'));
     } catch (e) {
-      alert('Failed to start login: ' + e);
+      alert(t('channels.whatsapp.loginFailed') + e);
       setLoginLoading(false);
     }
   };
@@ -771,21 +774,21 @@ export function Channels() {
       // Refresh list
       await fetchChannels();
 
-      alert('Channel configuration saved!');
+      alert(t('channels.saveSuccess'));
     } catch (e) {
       console.error('Save failed:', e);
-      alert('Save failed: ' + e);
+      alert(t('channels.saveFailed') + e);
     } finally {
       setSaving(false);
     }
   };
 
   const currentChannel = channels.find((c) => c.id === selectedChannel);
-  const currentInfo = currentChannel ? channelInfo[currentChannel.channel_type] : null;
+  const currentInfo = currentChannel ? getChannelInfo(t)[currentChannel.channel_type] : null;
 
   // Check if channel has valid configuration
   const hasValidConfig = (channel: ChannelConfig) => {
-    const info = channelInfo[channel.channel_type];
+    const info = getChannelInfo(t)[channel.channel_type];
     if (!info) return channel.enabled;
 
     // Check if required fields are filled
@@ -813,10 +816,10 @@ export function Channels() {
           {/* Channel list */}
           <div className="md:col-span-1 space-y-2">
             <h3 className="text-sm font-medium text-gray-400 mb-3 px-1">
-              Message Channels
+              {t('channels.title')}
             </h3>
             {channels.map((channel) => {
-              const info = channelInfo[channel.channel_type] || {
+              const info = getChannelInfo(t)[channel.channel_type] || {
                 name: channel.channel_type,
                 icon: <MessageSquare size={20} />,
                 color: 'text-gray-400',
@@ -857,12 +860,12 @@ export function Channels() {
                       {isConfigured ? (
                         <>
                           <Check size={12} className="text-green-400" />
-                          <span className="text-xs text-green-400">Configured</span>
+                           <span className="text-xs text-green-400">{t('channels.configured')}</span>
                         </>
                       ) : (
                         <>
                           <X size={12} className="text-gray-500" />
-                          <span className="text-xs text-gray-500">Not Configured</span>
+                           <span className="text-xs text-gray-500">{t('channels.notConfigured')}</span>
                         </>
                       )}
                     </div>
@@ -891,7 +894,7 @@ export function Channels() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">
-                      Configure {currentInfo.name}
+                      {t('channels.configure', { name: currentInfo.name })}
                     </h3>
                     {currentInfo.helpText && (
                       <p className="text-xs text-gray-500">{currentInfo.helpText}</p>
@@ -905,13 +908,13 @@ export function Channels() {
                     {feishuPluginLoading ? (
                       <div className="p-4 bg-dark-600 rounded-xl border border-dark-500 flex items-center gap-3">
                         <Loader2 size={20} className="animate-spin text-gray-400" />
-                        <span className="text-gray-400">Checking Feishu plugin status...</span>
+                         <span className="text-gray-400">{t('channels.feishu.checkingPlugin')}</span>
                       </div>
                     ) : feishuPluginStatus?.installed ? (
                       <div className="p-4 bg-green-500/10 rounded-xl border border-green-500/30 flex items-center gap-3">
                         <Package size={20} className="text-green-400" />
                         <div className="flex-1">
-                          <p className="text-green-400 font-medium">Feishu plugin installed</p>
+                           <p className="text-green-400 font-medium">{t('channels.feishu.pluginInstalled')}</p>
                           <p className="text-xs text-gray-400 mt-0.5">
                             {feishuPluginStatus.plugin_name || '@m1heng-clawd/feishu'}
                             {feishuPluginStatus.version && ` v${feishuPluginStatus.version}`}
@@ -924,9 +927,9 @@ export function Channels() {
                         <div className="flex items-start gap-3">
                           <AlertTriangle size={20} className="text-amber-400 mt-0.5" />
                           <div className="flex-1">
-                            <p className="text-amber-400 font-medium">Feishu plugin installation required</p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              Feishu channel requires the @m1heng-clawd/feishu plugin to be installed first.
+                             <p className="text-amber-400 font-medium">{t('channels.feishu.pluginRequired')}</p>
+                             <p className="text-xs text-gray-400 mt-1">
+                               {t('channels.feishu.pluginDesc')}
                             </p>
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button
@@ -939,18 +942,18 @@ export function Channels() {
                                 ) : (
                                   <Download size={14} />
                                 )}
-                                {feishuPluginInstalling ? 'Installing...' : 'One-click Install Plugin'}
+                                 {feishuPluginInstalling ? t('channels.feishu.installing') : t('channels.feishu.installPlugin')}
                               </button>
                               <button
                                 onClick={checkFeishuPlugin}
                                 disabled={feishuPluginLoading}
                                 className="btn-secondary flex items-center gap-2 text-sm py-2"
                               >
-                                Refresh Status
+                                 {t('channels.whatsapp.refreshStatus')}
                               </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">
-                              Or run manually: <code className="px-1.5 py-0.5 bg-dark-600 rounded text-gray-400">openclaw plugins install @m1heng-clawd/feishu</code>
+                             <p className="text-xs text-gray-500 mt-2">
+                               {t('channels.feishu.manualInstall')}
                             </p>
                           </div>
                         </div>
@@ -964,7 +967,7 @@ export function Channels() {
                   <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/30 flex items-start gap-2 mb-4">
                     <Bot size={16} className="text-blue-400 mt-0.5 shrink-0" />
                     <p className="text-xs text-gray-300">
-                      <strong className="text-blue-400">Multi-bot mode active.</strong> Bot Token, DM Policy, Group Policy, and Stream Mode are now configured per-account below.
+                       <strong className="text-blue-400">{t('channels.multiBot.title')}.</strong> {t('channels.multiBot.desc')}
                     </p>
                   </div>
                 )}
@@ -997,7 +1000,7 @@ export function Channels() {
                             }
                             className="input-base"
                           >
-                            <option value="">Please select...</option>
+                            <option value="">{t('channels.selectPlaceholder')}</option>
                             {field.options?.map((opt) => (
                               <option key={opt.value} value={opt.value}>
                                 {opt.label}
@@ -1019,7 +1022,7 @@ export function Channels() {
                               type="button"
                               onClick={() => togglePasswordVisibility(field.key)}
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
-                              title={visiblePasswords.has(field.key) ? 'Hide' : 'Show'}
+                               title={visiblePasswords.has(field.key) ? t('channels.hide') : t('channels.show')}
                             >
                               {visiblePasswords.has(field.key) ? (
                                 <EyeOff size={18} />
@@ -1045,13 +1048,13 @@ export function Channels() {
                           <div className="mt-3 space-y-3">
                             {/* Allowed Groups */}
                             <div className="p-4 bg-dark-600 rounded-xl border border-dark-500">
-                              <label className="block text-sm text-gray-400 mb-2">Allowed Groups (Chat ID)</label>
+                               <label className="block text-sm text-gray-400 mb-2">{t('channels.groups.label')}</label>
                               <div className="flex gap-2 mb-2">
                                 <input
                                   type="text"
                                   value={newGroupInput}
                                   onChange={(e) => setNewGroupInput(e.target.value)}
-                                  placeholder="e.g. -1001234567890"
+                                   placeholder={t('channels.groups.placeholder')}
                                   className="input-base text-sm"
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -1088,7 +1091,7 @@ export function Channels() {
                                             : 'border-red-500/50 bg-red-500/10 text-red-400'
                                             }`}
                                         >
-                                          {settings.enabled ? 'enabled' : 'disabled'}
+                                           {settings.enabled ? t('channels.groups.enabled') : t('channels.groups.disabled')}
                                         </button>
                                         <button
                                           onClick={() => setAllowedGroups({ ...allowedGroups, [id]: { ...settings, requireMention: !settings.requireMention } })}
@@ -1096,9 +1099,9 @@ export function Channels() {
                                             ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400'
                                             : 'border-green-500/50 bg-green-500/10 text-green-400'
                                             }`}
-                                          title={settings.requireMention ? 'Bot only responds when @mentioned' : 'Bot responds to all messages'}
-                                        >
-                                          {settings.requireMention ? '@mention' : 'all msgs'}
+                                           title={settings.requireMention ? t('channels.groups.mentionTitle') : t('channels.groups.allMsgsTitle')}
+                                         >
+                                           {settings.requireMention ? t('channels.groups.mention') : t('channels.groups.allMsgs')}
                                         </button>
                                         <button
                                           onClick={() => {
@@ -1114,23 +1117,23 @@ export function Channels() {
                                     </div>
                                     <div className="px-3 pb-3 space-y-2">
                                       <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Group Policy</label>
+                                         <label className="block text-xs text-gray-500 mb-1">{t('channels.groups.policyLabel')}</label>
                                         <select
                                           value={settings.groupPolicy}
                                           onChange={(e) => setAllowedGroups({ ...allowedGroups, [id]: { ...settings, groupPolicy: e.target.value } })}
                                           className="input-base text-xs py-1"
                                         >
-                                          <option value="open">open — anyone can talk</option>
-                                          <option value="allowlist">allowlist — only allowed users</option>
-                                          <option value="disabled">disabled — no one</option>
+                                           <option value="open">{t('channels.groups.policyOpen')}</option>
+                                           <option value="allowlist">{t('channels.groups.policyAllowlist')}</option>
+                                           <option value="disabled">{t('channels.groups.policyDisabled')}</option>
                                         </select>
                                       </div>
                                       <div>
-                                        <label className="block text-xs text-gray-500 mb-1">System Prompt (per-group)</label>
+                                         <label className="block text-xs text-gray-500 mb-1">{t('channels.groups.systemPrompt')}</label>
                                         <textarea
                                           value={settings.systemPrompt}
                                           onChange={(e) => setAllowedGroups({ ...allowedGroups, [id]: { ...settings, systemPrompt: e.target.value } })}
-                                          placeholder="e.g. You are an investment analyst. Your research is in investments/."
+                                           placeholder={t('channels.groups.systemPromptPlaceholder')}
                                           className="input-base text-xs min-h-[60px] resize-y"
                                           rows={2}
                                         />
@@ -1139,25 +1142,25 @@ export function Channels() {
                                   </div>
                                 ))}
                                 {Object.keys(allowedGroups).length === 0 && (
-                                  <div className="text-xs text-gray-500 text-center py-2 italic">
-                                    No groups added. Bot will ignore all groups.
+                                   <div className="text-xs text-gray-500 text-center py-2 italic">
+                                     {t('channels.groups.noGroups')}
                                   </div>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Each group gets its own settings. Use system prompts to give each group a unique personality/domain.
+                               <p className="text-xs text-gray-500 mt-2">
+                                 {t('channels.groups.eachGroupHint')}
                               </p>
                             </div>
 
                             {/* Group Allowed Senders (groupAllowFrom) */}
                             <div className="p-4 bg-dark-600 rounded-xl border border-dark-500">
-                              <label className="block text-sm text-gray-400 mb-2">Allowed Senders in Groups (User ID)</label>
+                               <label className="block text-sm text-gray-400 mb-2">{t('channels.groupSenders.label')}</label>
                               <div className="flex gap-2 mb-2">
                                 <input
                                   type="text"
                                   value={newGroupAllowFromInput}
                                   onChange={(e) => setNewGroupAllowFromInput(e.target.value)}
-                                  placeholder="e.g. 123456789"
+          placeholder={t('channels.groupSenders.placeholder')}
                                   className="input-base text-sm"
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
@@ -1194,13 +1197,13 @@ export function Channels() {
                                   </div>
                                 ))}
                                 {groupAllowFromUsers.length === 0 && (
-                                  <div className="text-xs text-gray-500 text-center py-2 italic">
-                                    No senders restricted. All group members can interact.
+                                   <div className="text-xs text-gray-500 text-center py-2 italic">
+                                     {t('channels.groupSenders.noSenders')}
                                   </div>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500 mt-2">
-                                Saved as <code className="px-1 py-0.5 bg-dark-500 rounded">channels.telegram.groupAllowFrom</code>. Numeric Telegram user IDs.
+                               <p className="text-xs text-gray-500 mt-2">
+                                 {t('channels.groupSenders.hint')}
                               </p>
                             </div>
                           </div>
@@ -1212,7 +1215,7 @@ export function Channels() {
                             allowedUsers={allowFromUsers}
                             onUpdate={setAllowFromUsers}
                             botToken={configForm['botToken'] as string}
-                            placeholderText={configForm[field.key] === 'pairing' ? 'Users added via pairing flow. You can also add manually.' : 'No users allowed. Add user IDs above.'}
+                             placeholderText={configForm[field.key] === 'pairing' ? t('channels.dmAllowlist.placeholderPairing') : t('channels.dmAllowlist.placeholderAllowlist')}
                           />
                         )}
                       </div>
@@ -1224,8 +1227,8 @@ export function Channels() {
                       <div className="flex items-center gap-3 mb-3">
                         <QrCode size={24} className="text-green-400" />
                         <div>
-                          <p className="text-white font-medium">QR Code Login</p>
-                          <p className="text-xs text-gray-400">WhatsApp requires QR code scan to login</p>
+                           <p className="text-white font-medium">{t('channels.whatsapp.qrTitle')}</p>
+                           <p className="text-xs text-gray-400">{t('channels.whatsapp.qrDesc')}</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -1239,7 +1242,7 @@ export function Channels() {
                           ) : (
                             <QrCode size={16} />
                           )}
-                          {loginLoading ? 'Waiting for login...' : 'Start QR Code Login'}
+                           {loginLoading ? t('channels.whatsapp.waitingLogin') : t('channels.whatsapp.startLogin')}
                         </button>
                         <button
                           onClick={async () => {
@@ -1248,7 +1251,7 @@ export function Channels() {
                           }}
                           disabled={testing}
                           className="btn-secondary flex items-center justify-center gap-2 px-4"
-                          title="Refresh Status"
+                           title={t('channels.whatsapp.refreshStatus')}
                         >
                           {testing ? (
                             <Loader2 size={16} className="animate-spin" />
@@ -1258,7 +1261,7 @@ export function Channels() {
                         </button>
                       </div>
                       <p className="text-xs text-gray-500 mt-2 text-center">
-                        After successful login, click the button on the right to refresh status, or run: openclaw channels login --channel whatsapp
+                         {t('channels.whatsapp.afterLoginHint')}
                       </p>
                     </div>
                   )}
@@ -1269,21 +1272,21 @@ export function Channels() {
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <Bot size={18} className="text-blue-400" />
-                          <h4 className="text-sm font-semibold text-white">Bot Accounts</h4>
-                          <span className="text-xs text-gray-500">Multi-agent routing</span>
+                           <h4 className="text-sm font-semibold text-white">{t('channels.multiBot.botAccounts')}</h4>
+                           <span className="text-xs text-gray-500">{t('channels.multiBot.routingLabel')}</span>
                         </div>
                         <button
                           onClick={() => setShowAddAccountDialog(true)}
                           className="btn-secondary text-xs flex items-center gap-1 py-1 px-2"
                         >
-                          <Plus size={14} /> Add Bot
+                           <Plus size={14} /> {t('channels.multiBot.addBot')}
                         </button>
                       </div>
 
                       {telegramAccounts.length === 0 ? (
-                        <div className="text-xs text-gray-500 text-center py-4 italic">
-                          No bot accounts configured. Your existing bot token is used as a single agent.
-                          <br />Add multiple bots to route each to a different agent.
+                         <div className="text-xs text-gray-500 text-center py-4 italic">
+                           {t('channels.multiBot.noBots')}
+                           <br />{t('channels.multiBot.addMultiple')}
                         </div>
                       ) : (
                         <div className="space-y-2">
@@ -1297,7 +1300,7 @@ export function Channels() {
                                   <Bot size={14} className="text-blue-400" />
                                   <span className="font-mono text-sm text-gray-200">{acct.id}</span>
                                   {acct.primary && (
-                                    <span className="text-[10px] bg-claw-500/20 text-claw-400 px-1.5 py-0.5 rounded border border-claw-500/30">PRIMARY</span>
+                                     <span className="text-[10px] bg-claw-500/20 text-claw-400 px-1.5 py-0.5 rounded border border-claw-500/30">{t('channels.multiBot.primary')}</span>
                                   )}
                                   <span className="text-xs text-gray-500 font-mono">{'•••' + acct.bot_token.slice(-6)}</span>
                                 </div>
@@ -1315,7 +1318,7 @@ export function Channels() {
                               {expandedAccount === acct.id && (
                                 <div className="px-3 pb-3 space-y-3 border-t border-dark-400 pt-2">
                                   <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Bot Token</label>
+                                     <label className="block text-xs text-gray-500 mb-1">{t('channels.fields.botToken')}</label>
                                     <input
                                       type="password"
                                       value={acct.bot_token}
@@ -1328,7 +1331,7 @@ export function Channels() {
                                   </div>
                                   <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                      <label className="block text-xs text-gray-500 mb-1">Group Policy</label>
+                                       <label className="block text-xs text-gray-500 mb-1">{t('channels.policies.groupPolicy')}</label>
                                       <select
                                         value={acct.group_policy || 'open'}
                                         onChange={(e) => {
@@ -1343,7 +1346,7 @@ export function Channels() {
                                       </select>
                                     </div>
                                     <div>
-                                      <label className="block text-xs text-gray-500 mb-1">DM Policy</label>
+                                       <label className="block text-xs text-gray-500 mb-1">{t('channels.policies.dmPolicy')}</label>
                                       <select
                                         value={acct.dm_policy || 'pairing'}
                                         onChange={(e) => {
@@ -1360,7 +1363,7 @@ export function Channels() {
                                   </div>
 
                                   <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Exclusive Topics (Allowlist)</label>
+                                     <label className="block text-xs text-gray-500 mb-1">{t('channels.multiBot.exclusiveTopics')}</label>
                                     <input
                                       type="text"
                                       value={acct.exclusive_topics?.join(', ') || ''}
@@ -1370,10 +1373,10 @@ export function Channels() {
                                         const updated = telegramAccounts.map(a => a.id === acct.id ? { ...a, exclusive_topics: topics } : a);
                                         setTelegramAccounts(updated);
                                       }}
-                                      placeholder="Comma-separated Topic IDs (e.g. 42, 45). Leave empty to allow all."
+                                       placeholder={t('channels.multiBot.exclusiveTopicsDesc')}
                                       className="input-base text-xs"
                                     />
-                                    <p className="text-[10px] text-gray-500 mt-1">If set, bot will <strong>only</strong> respond in these topics and ignore all others.</p>
+                                     <p className="text-[10px] text-gray-500 mt-1">{t('channels.multiBot.exclusiveTopicsHint')}</p>
                                   </div>
 
                                   {/* Groups Management (shown when allowlist) */}
@@ -1386,12 +1389,12 @@ export function Channels() {
                                     return (
                                       <div className="p-3 bg-dark-600 rounded-lg border border-dark-500 space-y-2">
                                         <div className="flex items-center justify-between">
-                                          <label className="text-xs text-gray-400 font-semibold">Allowed Groups</label>
+                                           <label className="text-xs text-gray-400 font-semibold">{t('channels.multiBot.allowedGroups')}</label>
                                         </div>
                                         <div className="flex gap-2">
                                           <input
                                             type="text"
-                                            placeholder="Group Chat ID, e.g. -1003726801732"
+                                             placeholder={t('channels.multiBot.groupChatIdPlaceholder')}
                                             className="input-base text-xs flex-1"
                                             onKeyDown={(e) => {
                                               if (e.key === 'Enter') {
@@ -1428,7 +1431,7 @@ export function Channels() {
                                           if (suggestedGroups.length === 0) return null;
                                           return (
                                             <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                              <span className="text-[10px] text-gray-500">From {primaryAcct.id}:</span>
+                                               <span className="text-[10px] text-gray-500">{t('channels.multiBot.fromAccount', { id: primaryAcct.id })}</span>
                                               {suggestedGroups.map(gid => (
                                                 <button
                                                   key={gid}
@@ -1461,9 +1464,9 @@ export function Channels() {
                                                   className={`text-[10px] px-1.5 py-0.5 rounded-full border ${gsettings.requireMention
                                                     ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400'
                                                     : 'border-green-500/50 bg-green-500/10 text-green-400'}`}
-                                                  title={gsettings.requireMention ? 'Only responds when @mentioned' : 'Responds to all messages'}
-                                                >
-                                                  {gsettings.requireMention ? '@mention' : 'all msgs'}
+                                                   title={gsettings.requireMention ? t('channels.groups.mentionTitle') : t('channels.groups.allMsgsTitle')}
+                                                 >
+                                                   {gsettings.requireMention ? t('channels.groups.mention') : t('channels.groups.allMsgs')}
                                                 </button>
                                                 <button
                                                   onClick={() => {
@@ -1480,15 +1483,15 @@ export function Channels() {
 
                                             {/* (Topic configuration moved to Exclusive Topics above) */}
                                             <div className="px-2 pb-1">
-                                              <p className="text-[10px] text-gray-600 italic">
-                                                Use <strong>Exclusive Topics</strong> above to restrict this bot to specific topics.
+                                               <p className="text-[10px] text-gray-600 italic">
+                                                 {t('channels.multiBot.useExclusiveTopics')}
                                               </p>
                                             </div>
                                           </div>
                                         ))}
 
                                         {Object.keys(groups).length === 0 && (
-                                          <p className="text-[10px] text-gray-500 italic text-center py-1">No groups added. Bot will ignore all groups.</p>
+                                           <p className="text-[10px] text-gray-500 italic text-center py-1">{t('channels.groups.noGroups')}</p>
                                         )}
                                       </div>
                                     );
@@ -1505,7 +1508,7 @@ export function Channels() {
                                           setTelegramAccounts(updated);
                                         }}
                                         botToken={acct.bot_token}
-                                        placeholderText={acct.dm_policy === 'pairing' ? 'Users added via pairing flow. You can also add manually.' : 'No users allowed. Add user IDs above.'}
+                                         placeholderText={acct.dm_policy === 'pairing' ? t('channels.dmAllowlist.placeholderPairing') : t('channels.dmAllowlist.placeholderAllowlist')}
                                       />
                                       {/* Suggestions from primary/default bot */}
                                       {(() => {
@@ -1517,7 +1520,7 @@ export function Channels() {
                                         if (suggestedUsers.length === 0) return null;
                                         return (
                                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                            <span className="text-[10px] text-gray-500">From {primaryAcct.id}:</span>
+                                             <span className="text-[10px] text-gray-500">{t('channels.multiBot.fromAccount', { id: primaryAcct.id })}</span>
                                             {suggestedUsers.map(uid => (
                                               <button
                                                 key={uid}
@@ -1543,7 +1546,7 @@ export function Channels() {
                                     className="btn-primary text-xs py-1 px-3 flex items-center gap-1 mt-2"
                                   >
                                     {savingAccount ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                                    Save Account
+                                     {t('channels.multiBot.saveAccount')}
                                   </button>
                                 </div>
                               )}
@@ -1552,27 +1555,27 @@ export function Channels() {
                         </div>
                       )}
 
-                      <p className="text-xs text-gray-500 mt-2">
-                        Each bot account can be bound to a different agent via <strong>Agents → Routing Rules</strong> using Account ID.
+                       <p className="text-xs text-gray-500 mt-2">
+                         {t('channels.multiBot.saveHint')}
                       </p>
 
                       {/* Add Account Dialog */}
                       {showAddAccountDialog && (
                         <div className="mt-3 p-3 bg-dark-700 rounded-lg border border-claw-500/30">
-                          <h5 className="text-sm font-medium text-white mb-2">Add Bot Account</h5>
+                           <h5 className="text-sm font-medium text-white mb-2">{t('channels.multiBot.addBotAccount')}</h5>
                           <div className="space-y-2">
                             <input
                               type="text"
                               value={newAccountId}
                               onChange={e => setNewAccountId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                              placeholder="Account ID (e.g. researchbot)"
+                               placeholder={t('channels.multiBot.accountIdPlaceholder')}
                               className="input-base text-sm"
                             />
                             <input
                               type="password"
                               value={newAccountToken}
                               onChange={e => setNewAccountToken(e.target.value)}
-                              placeholder="Bot Token from @BotFather"
+                               placeholder={t('channels.multiBot.botTokenPlaceholder')}
                               className="input-base text-sm"
                             />
                             <div className="flex gap-2">
@@ -1591,13 +1594,13 @@ export function Channels() {
                                 disabled={!newAccountId || !newAccountToken || savingAccount}
                                 className="btn-primary text-xs py-1.5 px-3"
                               >
-                                {savingAccount ? 'Saving...' : 'Add'}
+                                 {savingAccount ? t('channels.multiBot.saving') : t('channels.multiBot.add')}
                               </button>
                               <button
                                 onClick={() => { setShowAddAccountDialog(false); setNewAccountId(''); setNewAccountToken(''); }}
                                 className="btn-secondary text-xs py-1.5 px-3"
                               >
-                                Cancel
+                                 {t('channels.cancel')}
                               </button>
                             </div>
                           </div>
@@ -1618,7 +1621,7 @@ export function Channels() {
                       ) : (
                         <Check size={16} />
                       )}
-                      Save Configuration
+                       {t('channels.saveConfig')}
                     </button>
 
                     {/* Quick test button */}
@@ -1632,7 +1635,7 @@ export function Channels() {
                       ) : (
                         <Play size={16} />
                       )}
-                      Quick Test
+                       {t('channels.quickTest')}
                     </button>
 
                     {/* Clear config button */}
@@ -1647,22 +1650,22 @@ export function Channels() {
                         ) : (
                           <Trash2 size={16} />
                         )}
-                        Clear Configuration
+                         {t('channels.clearConfig')}
                       </button>
                     ) : (
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 rounded-lg border border-red-500/50">
-                        <span className="text-sm text-red-300">Confirm clear?</span>
+                         <span className="text-sm text-red-300">{t('channels.confirmClear')}</span>
                         <button
                           onClick={handleClearConfig}
                           className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                         >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setShowClearConfirm(false)}
-                          className="px-2 py-1 text-xs bg-dark-600 text-gray-300 rounded hover:bg-dark-500 transition-colors"
-                        >
-                          Cancel
+                           {t('channels.confirm')}
+                         </button>
+                         <button
+                           onClick={() => setShowClearConfirm(false)}
+                           className="px-2 py-1 text-xs bg-dark-600 text-gray-300 rounded hover:bg-dark-500 transition-colors"
+                         >
+                           {t('channels.cancel')}
                         </button>
                       </div>
                     )}
@@ -1688,7 +1691,7 @@ export function Channels() {
                           'font-medium',
                           testResult.success ? 'text-green-400' : 'text-red-400'
                         )}>
-                          {testResult.success ? 'Test successful' : 'Test failed'}
+                           {testResult.success ? t('channels.testSuccess') : t('channels.testFailed')}
                         </p>
                         <p className="text-sm text-gray-400 mt-1">{testResult.message}</p>
                         {testResult.error && (
@@ -1703,7 +1706,7 @@ export function Channels() {
               </motion.div>
             ) : (
               <div className="h-full flex items-center justify-center text-gray-500">
-                <p>Select a channel on the left to configure</p>
+                 <p>{t('channels.selectChannel')}</p>
               </div>
             )}
           </div>

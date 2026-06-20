@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, MCPConfig, isTauri } from '../../lib/tauri';
 import { Plus, Trash2, Edit2, Save, Terminal, Blocks, AlertCircle, GitBranch, Loader2, Download, CheckCircle, Package, Plug, Globe, Zap } from 'lucide-react';
 import clsx from 'clsx';
 
 export function MCP() {
+    const { t } = useTranslation();
     const [configs, setConfigs] = useState<Record<string, MCPConfig>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function MCP() {
             setConfigs(result);
             setError(null);
         } catch (e) {
-            setError('Failed to load MCP configuration');
+            setError(t('mcp.failLoad'));
             console.error(e);
         } finally {
             setLoading(false);
@@ -77,9 +79,9 @@ export function MCP() {
         try {
             await api.installMcporter();
             setMcporterInstalled(true);
-            setSuccess('mcporter installed successfully!');
+            setSuccess(t('mcp.mcporterSuccess'));
         } catch (e) {
-            setError(`Failed to install mcporter: ${e}`);
+            setError(t('mcp.failMcporterInstall', { error: String(e) }));
         } finally {
             setInstallingMcporter(false);
         }
@@ -160,27 +162,27 @@ export function MCP() {
     };
 
     const handleUninstall = async (id: string) => {
-        if (!confirm(`Uninstall MCP "${id}"? This will remove the cloned files and configuration.`)) return;
+        if (!confirm(t('mcp.uninstallConfirm', { id }))) return;
         try {
             await api.uninstallMCP(id);
-            setSuccess(`Successfully uninstalled ${id}`);
+            setSuccess(t('mcp.uninstallSuccess', { id }));
             await fetchConfigs();
         } catch (e) {
-            setError(`Failed to uninstall MCP: ${e}`);
+            setError(t('mcp.failUninstall', { error: String(e) }));
         }
     };
 
     const handleSave = async () => {
         if (!formData.name.trim()) {
-            setError('Name is required');
+            setError(t('mcp.nameRequired'));
             return;
         }
         if (formData.serverType === 'local' && !formData.command.trim()) {
-            setError('Command is required for local servers');
+            setError(t('mcp.commandRequired'));
             return;
         }
         if (formData.serverType === 'remote' && !formData.url.trim()) {
-            setError('URL is required for remote servers');
+            setError(t('mcp.urlRequired'));
             return;
         }
 
@@ -219,16 +221,16 @@ export function MCP() {
             setEditingId(null);
             setIsNew(false);
             setError(null);
-            setSuccess(`Saved configuration for ${formData.name}`);
+            setSuccess(t('mcp.saveSuccess', { name: formData.name }));
             await fetchConfigs();
         } catch (e) {
-            setError(`Failed to save: ${e}`);
+            setError(t('mcp.failSave', { error: String(e) }));
         }
     };
 
     const handleInstall = async () => {
         if (!gitUrl.trim()) {
-            setError('Please enter a GitHub repository URL');
+            setError(t('mcp.enterGithubUrl'));
             return;
         }
 
@@ -238,10 +240,10 @@ export function MCP() {
         try {
             let result: string;
             if (installMode === 'plugin') {
-                setInstallProgress('Installing via OpenClaw plugins system...');
+                setInstallProgress(t('mcp.installPluginProgress'));
                 result = await api.installMCPPlugin(gitUrl.trim());
             } else {
-                setInstallProgress('Cloning repository and building from source...');
+                setInstallProgress(t('mcp.installSourceProgress'));
                 result = await api.installMCPFromGit(gitUrl.trim());
             }
             setSuccess(result);
@@ -250,7 +252,7 @@ export function MCP() {
             setInstallProgress('');
             await fetchConfigs();
         } catch (e) {
-            setError(`Installation failed: ${e}`);
+            setError(t('mcp.installFailed', { error: String(e) }));
             setInstallProgress('');
         } finally {
             setInstalling(false);
@@ -258,15 +260,15 @@ export function MCP() {
     };
 
     const handleUninstallMcporter = async () => {
-        if (!confirm('Are you sure you want to uninstall mcporter? This will remove the global npm package.')) return;
+        if (!confirm(t('mcp.mcporterUninstallConfirm'))) return;
         setInstallingMcporter(true);
         setError(null);
         try {
             await api.uninstallMcporter();
             setMcporterInstalled(false);
-            setSuccess('mcporter uninstalled successfully');
+            setSuccess(t('mcp.mcporterUninstallSuccess'));
         } catch (e) {
-            setError(`Failed to uninstall mcporter: ${e}`);
+            setError(t('mcp.failMcporterUninstall', { error: String(e) }));
         } finally {
             setInstallingMcporter(false);
         }
@@ -289,8 +291,8 @@ export function MCP() {
         <div className="h-full overflow-y-auto scroll-container pr-2">
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Model Context Protocol</h2>
-                    <p className="text-gray-400">Manage MCP servers to extend Agent capabilities</p>
+                    <h2 className="text-2xl font-bold text-white mb-2">{t('mcp.title')}</h2>
+                    <p className="text-gray-400">{t('mcp.desc')}</p>
                 </div>
                 {!editingId && (
                     <div className="flex items-center gap-2">
@@ -300,7 +302,7 @@ export function MCP() {
                             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                         >
                             <GitBranch size={18} />
-                            <span>Install from Git</span>
+                            <span>{t('mcp.installFromGit')}</span>
                         </button>
                         <button
                             onClick={handleAddNew}
@@ -308,7 +310,7 @@ export function MCP() {
                             className="flex items-center gap-2 px-4 py-2 bg-claw-500 hover:bg-claw-600 text-white rounded-lg transition-colors"
                         >
                             <Plus size={18} />
-                            <span>Add Manual</span>
+                            <span>{t('mcp.addManual')}</span>
                         </button>
                     </div>
                 )}
@@ -340,12 +342,12 @@ export function MCP() {
                                 'text-sm font-medium',
                                 mcporterInstalled ? 'text-green-200' : 'text-amber-200'
                             )}>
-                                {mcporterInstalled ? 'mcporter is installed' : 'mcporter is required for MCP support'}
+                                {mcporterInstalled ? t('mcp.mcporterInstalled') : t('mcp.mcporterRequired')}
                             </p>
                             <p className="text-xs text-gray-500">
                                 {mcporterInstalled
-                                    ? 'OpenClaw can use MCP servers via the mcporter skill'
-                                    : 'Install mcporter to enable MCP server integration with OpenClaw agents'}
+                                    ? t('mcp.mcporterDesc1')
+                                    : t('mcp.mcporterDesc2')}
                             </p>
                         </div>
                     </div>
@@ -354,7 +356,7 @@ export function MCP() {
                             onClick={handleUninstallMcporter}
                             disabled={installingMcporter}
                             className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
-                            title="Uninstall mcporter"
+                            title={t('mcp.uninstallMcporter')}
                         >
                             {installingMcporter ? (
                                 <Loader2 size={16} className="animate-spin" />
@@ -371,12 +373,12 @@ export function MCP() {
                             {installingMcporter ? (
                                 <>
                                     <Loader2 size={16} className="animate-spin" />
-                                    <span>Installing...</span>
+                                    <span>{t('mcp.installing')}</span>
                                 </>
                             ) : (
                                 <>
                                     <Download size={16} />
-                                    <span>Install mcporter</span>
+                                    <span>{t('mcp.installMcporter')}</span>
                                 </>
                             )}
                         </button>
@@ -426,8 +428,8 @@ export function MCP() {
                                 <Download size={20} className="text-purple-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-white">Install MCP Server</h3>
-                                <p className="text-sm text-gray-400">Install from a GitHub repository URL</p>
+                                <h3 className="text-lg font-semibold text-white">{t('mcp.dialog.installMcp')}</h3>
+                                <p className="text-sm text-gray-400">{t('mcp.dialog.installFromGitDesc')}</p>
                             </div>
                         </div>
 
@@ -444,7 +446,7 @@ export function MCP() {
                                 )}
                             >
                                 <Plug size={15} />
-                                <span>As Plugin</span>
+                                <span>{t('mcp.dialog.asPlugin')}</span>
                             </button>
                             <button
                                 onClick={() => setInstallMode('source')}
@@ -457,27 +459,27 @@ export function MCP() {
                                 )}
                             >
                                 <GitBranch size={15} />
-                                <span>From Source</span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-500 text-gray-200">Recommended</span>
+                                <span>{t('mcp.dialog.fromSource')}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-500 text-gray-200">{t('mcp.dialog.recommended')}</span>
                             </button>
                         </div>
 
                         <p className="text-xs text-gray-500 mb-4">
                             {installMode === 'plugin'
-                                ? 'Uses OpenClaw\'s native plugin system. Only works for packages with openclaw.extensions in package.json.'
-                                : 'Clones the repository, runs npm install & build. Works with any MCP server from GitHub.'}
+                                ? t('mcp.dialog.pluginDesc')
+                                : t('mcp.dialog.sourceDesc')}
                         </p>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Repository URL</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.repoUrl')}</label>
                                 <div className="relative">
                                     <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                     <input
                                         type="text"
                                         value={gitUrl}
                                         onChange={(e) => setGitUrl(e.target.value)}
-                                        placeholder="https://github.com/owner/mcp-server-name"
+                                        placeholder={t('mcp.dialog.repoPlaceholder')}
                                         disabled={installing}
                                         className="w-full bg-dark-800 border border-dark-600 rounded-xl pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none font-mono text-sm disabled:opacity-50"
                                         onKeyDown={(e) => { if (e.key === 'Enter' && !installing) handleInstall(); }}
@@ -494,7 +496,7 @@ export function MCP() {
                                     <div className="flex items-center gap-3">
                                         <Loader2 size={20} className="text-purple-400 animate-spin" />
                                         <div>
-                                            <p className="text-sm text-white font-medium">Installing...</p>
+                                            <p className="text-sm text-white font-medium">{t('mcp.installing')}</p>
                                             <p className="text-xs text-gray-400">{installProgress}</p>
                                         </div>
                                     </div>
@@ -515,7 +517,7 @@ export function MCP() {
                                     disabled={installing}
                                     className="px-4 py-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors disabled:opacity-50"
                                 >
-                                    Cancel
+                                    {t('mcp.dialog.cancel')}
                                 </button>
                                 <button
                                     onClick={handleInstall}
@@ -525,12 +527,12 @@ export function MCP() {
                                     {installing ? (
                                         <>
                                             <Loader2 size={18} className="animate-spin" />
-                                            <span>Installing...</span>
+                                    <span>{t('mcp.installing')}</span>
                                         </>
                                     ) : (
                                         <>
                                             <Download size={18} />
-                                            <span>{installMode === 'plugin' ? 'Install as Plugin' : 'Install from Source'}</span>
+                                            <span>{installMode === 'plugin' ? t('mcp.dialog.installAsPlugin') : t('mcp.dialog.installFromSource')}</span>
                                         </>
                                     )}
                                 </button>
@@ -551,21 +553,21 @@ export function MCP() {
                     >
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-lg font-semibold text-white">
-                                {isNew ? 'Add New MCP Server' : `Edit ${formData.name}`}
+                                {isNew ? t('mcp.dialog.addServer') : t('mcp.dialog.editServer', { name: formData.name })}
                             </h3>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handleCancel}
                                     className="px-4 py-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
                                 >
-                                    Cancel
+                                    {t('mcp.dialog.cancel')}
                                 </button>
                                 <button
                                     onClick={handleSave}
                                     className="flex items-center gap-2 px-4 py-2 bg-claw-500 hover:bg-claw-600 text-white rounded-lg transition-colors"
                                 >
                                     <Save size={18} />
-                                    <span>Save</span>
+                                    <span>{t('mcp.dialog.save')}</span>
                                 </button>
                             </div>
                         </div>
@@ -573,19 +575,19 @@ export function MCP() {
                         <div className="space-y-6">
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Server Name</label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.serverName')}</label>
                                     <input
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         disabled={!isNew}
-                                        placeholder="e.g. filesystem-server"
+                                        placeholder={t('mcp.dialog.serverNamePlaceholder')}
                                         className="w-full bg-dark-800 border border-dark-600 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-claw-500 focus:border-transparent outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                                     />
-                                    <p className="mt-1 text-xs text-gray-500">Unique identifier for this server</p>
+                                    <p className="mt-1 text-xs text-gray-500">{t('mcp.dialog.serverNameDesc')}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Status</label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.status')}</label>
                                     <div className="flex items-center gap-3 py-2.5">
                                         <label className="flex items-center gap-2 cursor-pointer">
                                             <input
@@ -594,7 +596,7 @@ export function MCP() {
                                                 onChange={(e) => setFormData({ ...formData, enabled: e.target.checked })}
                                                 className="w-5 h-5 rounded border-dark-500 bg-dark-600 text-claw-500 focus:ring-offset-dark-700"
                                             />
-                                            <span className="text-white">Enabled</span>
+                                            <span className="text-white">{t('mcp.dialog.enabledLabel')}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -602,7 +604,7 @@ export function MCP() {
 
                             {/* Server Type Toggle */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Server Type</label>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.serverType')}</label>
                                 <div className="flex items-center gap-1 bg-dark-800 rounded-lg p-1">
                                     <button
                                         onClick={() => setFormData({ ...formData, serverType: 'local' })}
@@ -614,7 +616,7 @@ export function MCP() {
                                         )}
                                     >
                                         <Terminal size={15} />
-                                        <span>Local (stdio)</span>
+                                        <span>{t('mcp.dialog.localStdio')}</span>
                                     </button>
                                     <button
                                         onClick={() => setFormData({ ...formData, serverType: 'remote' })}
@@ -626,59 +628,59 @@ export function MCP() {
                                         )}
                                     >
                                         <Globe size={15} />
-                                        <span>Remote (URL)</span>
+                                        <span>{t('mcp.dialog.remoteUrl')}</span>
                                     </button>
                                 </div>
                             </div>
 
                             {formData.serverType === 'remote' ? (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Server URL</label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.serverUrl')}</label>
                                     <div className="relative">
                                         <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                         <input
                                             type="text"
                                             value={formData.url}
                                             onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                                            placeholder="https://mcp.example.com/mcp"
+                                            placeholder={t('mcp.dialog.serverUrlPlaceholder')}
                                             className="w-full bg-dark-800 border border-dark-600 rounded-xl pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono text-sm"
                                         />
                                     </div>
-                                    <p className="mt-1 text-xs text-gray-500">HTTP/HTTPS endpoint for the remote MCP server</p>
+                                    <p className="mt-1 text-xs text-gray-500">{t('mcp.dialog.serverUrlDesc')}</p>
                                 </div>
                             ) : (
                                 <>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-2">Command</label>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.command')}</label>
                                         <div className="relative">
                                             <Terminal className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                             <input
                                                 type="text"
                                                 value={formData.command}
                                                 onChange={(e) => setFormData({ ...formData, command: e.target.value })}
-                                                placeholder="e.g. node, python, or absolute path to executable"
+                                                placeholder={t('mcp.dialog.commandPlaceholder')}
                                                 className="w-full bg-dark-800 border border-dark-600 rounded-xl pl-10 pr-4 py-2.5 text-white focus:ring-2 focus:ring-claw-500 focus:border-transparent outline-none font-mono text-sm"
                                             />
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-2">Arguments</label>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.args')}</label>
                                         <input
                                             type="text"
                                             value={formData.args}
                                             onChange={(e) => setFormData({ ...formData, args: e.target.value })}
-                                            placeholder="e.g. index.js --port 3000 (space separated)"
+                                            placeholder={t('mcp.dialog.argsPlaceholder')}
                                             className="w-full bg-dark-800 border border-dark-600 rounded-xl px-4 py-2.5 text-white focus:ring-2 focus:ring-claw-500 focus:border-transparent outline-none font-mono text-sm"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-400 mb-2">Environment Variables</label>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">{t('mcp.dialog.envVars')}</label>
                                         <textarea
                                             value={formData.env}
                                             onChange={(e) => setFormData({ ...formData, env: e.target.value })}
-                                            placeholder={'KEY=VALUE\nAPI_TOKEN=xyz'}
+                                            placeholder={t('mcp.dialog.envVarsPlaceholder')}
                                             rows={5}
                                             className="w-full bg-dark-800 border border-dark-600 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-claw-500 focus:border-transparent outline-none font-mono text-sm resize-none"
                                         />
@@ -698,14 +700,14 @@ export function MCP() {
                         {Object.entries(configs).length === 0 ? (
                             <motion.div variants={itemVariants} className="col-span-full py-12 text-center text-gray-500">
                                 <Blocks size={48} className="mx-auto mb-4 opacity-20" />
-                                <p className="text-lg font-medium mb-1">No MCP Servers Configured</p>
-                                <p className="text-sm mb-6">Add a server manually or install from GitHub</p>
+                                <p className="text-lg font-medium mb-1">{t('mcp.noServers')}</p>
+                                <p className="text-sm mb-6">{t('mcp.noServersDesc')}</p>
                                 <button
                                     onClick={() => setShowInstallDialog(true)}
                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                                 >
                                     <GitBranch size={18} />
-                                    <span>Install from GitHub</span>
+                                    <span>{t('mcp.installFromGitHub')}</span>
                                 </button>
                             </motion.div>
                         ) : (
@@ -731,7 +733,7 @@ export function MCP() {
                                                         config.enabled ? "bg-green-500" : "bg-gray-500"
                                                     )} />
                                                     <span className="text-xs text-gray-500">
-                                                        {config.enabled ? 'Enabled' : 'Disabled'}
+                                                        {config.enabled ? t('mcp.enabled') : t('mcp.disabled')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -746,21 +748,21 @@ export function MCP() {
                                                         ? "bg-yellow-500/20 text-yellow-400"
                                                         : "hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-400"
                                                 )}
-                                                title="Test server"
+                                                title={t('mcp.testServer')}
                                             >
                                                 {testingId === id ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
                                             </button>
                                             <button
                                                 onClick={() => handleEdit(id)}
                                                 className="p-2 hover:bg-dark-600 text-gray-400 hover:text-white rounded-lg transition-colors"
-                                                title="Edit"
+                                                title={t('mcp.edit')}
                                             >
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleUninstall(id)}
                                                 className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
-                                                title="Uninstall"
+                                                title={t('mcp.uninstall')}
                                             >
                                                 <Trash2 size={16} />
                                             </button>

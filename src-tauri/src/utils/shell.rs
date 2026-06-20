@@ -238,6 +238,16 @@ pub fn spawn_background(script: &str) -> io::Result<()> {
 /// Get openclaw executable path
 /// Detects multiple possible installation paths, since GUI apps don't inherit user shell's PATH
 pub fn get_openclaw_path() -> Option<String> {
+    // First check manager.json for custom path
+    if let Ok(manager_config) = load_manager_config_from_file() {
+        if let Some(custom_path) = manager_config.pointer("/openclaw_path").and_then(|v| v.as_str()) {
+            if !custom_path.is_empty() && std::path::Path::new(custom_path).exists() {
+                info!("[Shell] Using custom openclaw path from manager config: {}", custom_path);
+                return Some(custom_path.to_string());
+            }
+        }
+    }
+
     // Windows: check common npm global installation paths
     if platform::is_windows() {
         let possible_paths = get_windows_openclaw_paths();
@@ -274,6 +284,25 @@ pub fn get_openclaw_path() -> Option<String> {
     }
     
     None
+}
+
+/// Load manager.json config from file (helper for shell.rs)
+fn load_manager_config_from_file() -> Result<serde_json::Value, String> {
+    let config_path = platform::get_manager_config_file_path();
+    if !file::file_exists(&config_path) {
+        return Ok(serde_json::json!({}));
+    }
+    let content = file::read_file(&config_path).map_err(|e| e.to_string())?;
+    let content = content.strip_prefix('\u{FEFF}').unwrap_or(&content);
+    serde_json::from_str(content).map_err(|e| e.to_string())
+}
+
+/// Get gateway port from manager.json (default 18789)
+pub fn get_gateway_port_from_config() -> u16 {
+    load_manager_config_from_file()
+        .ok()
+        .and_then(|c| c.pointer("/gateway_port").and_then(|v| v.as_u64()).map(|v| v as u16))
+        .unwrap_or(18789)
 }
 
 /// Get possible openclaw installation paths on Unix systems
@@ -544,6 +573,10 @@ pub fn spawn_openclaw_gateway() -> io::Result<()> {
     })?;
 
     info!("[Shell] openclaw path: {}", openclaw_path);
+
+    // Read port from manager.json
+    let port = get_gateway_port_from_config();
+    info!("[Shell] Gateway port: {}", port);
     
     // Load user's env file environment variables (consistent with shell script source ~/.openclaw/env)
     info!("[Shell] Loading user environment variables...");
@@ -562,12 +595,12 @@ pub fn spawn_openclaw_gateway() -> io::Result<()> {
     let mut cmd = if platform::is_windows() && openclaw_path.ends_with(".cmd") {
         info!("[Shell] Windows mode: executing .cmd directly");
         let mut c = Command::new(&openclaw_path);
-        c.args(["gateway", "run", "--port", "18789"]);
+        c.args(["gateway", "run", "--port", &port.to_string()]);
         c
     } else {
         info!("[Shell] Unix/Direct mode: executing directly");
         let mut c = Command::new(&openclaw_path);
-        c.args(["gateway", "run", "--port", "18789"]);
+        c.args(["gateway", "run", "--port", &port.to_string()]);
         c
     };
     

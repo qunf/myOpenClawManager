@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
+import { useTranslation } from 'react-i18next';
 import {
     Users,
     Plus,
@@ -74,6 +75,7 @@ interface RoutingTestResult {
 }
 
 export function Agents() {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [agents, setAgents] = useState<AgentInfo[]>([]);
     const [bindings, setBindings] = useState<AgentBinding[]>([]);
@@ -169,7 +171,7 @@ export function Agents() {
     };
 
     const handleDeleteAgent = async (id: string) => {
-        if (!confirm(`Delete agent ${id}?`)) return;
+        if (!confirm(t('agents.deleteConfirm', { id }))) return;
         try {
             await invoke('delete_agent', { agentId: id });
             fetchData();
@@ -193,7 +195,7 @@ export function Agents() {
     };
 
     const handleDeleteBinding = async (index: number) => {
-        if (!confirm('Delete this binding rule?')) return;
+        if (!confirm(t('agents.deleteBindingConfirm'))) return;
         try {
             await invoke('delete_agent_binding', { index });
             fetchData();
@@ -284,10 +286,10 @@ export function Agents() {
                     >
                         <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                             <Sparkles className="text-amber-400" size={24} />
-                            Routing Flow
+                            {t('agents.routingFlow')}
                         </h2>
                         <div className="flex items-center gap-2 text-gray-500 group-hover:text-gray-300 transition-colors">
-                            <span className="text-xs">{showRoutingFlow ? 'Hide' : 'Show'}</span>
+                            <span className="text-xs">{showRoutingFlow ? t('agents.hide') : t('agents.show')}</span>
                             <ChevronDown size={16} className={`transition-transform ${showRoutingFlow ? 'rotate-180' : ''}`} />
                         </div>
                     </button>
@@ -307,11 +309,11 @@ export function Agents() {
                                                 <div key={idx} className="flex items-center gap-0 text-sm">
                                                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 min-w-[120px]">
                                                         <Bot size={14} />
-                                                        <span className="font-medium">{binding.match_rule?.account_id || 'Any'}</span>
+                                                        <span className="font-medium">{binding.match_rule?.account_id || t('agents.any')}</span>
                                                     </div>
                                                     <ChevronRight size={16} className="text-gray-600 mx-1 flex-shrink-0" />
                                                     <div className="px-3 py-2 rounded-lg bg-dark-600 border border-dark-500 text-gray-400 text-xs">
-                                                        {binding.match_rule?.channel || 'any'}
+                                                        {binding.match_rule?.channel || t('agents.any')}
                                                     </div>
                                                     <ChevronRight size={16} className="text-gray-600 mx-1 flex-shrink-0" />
                                                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-claw-500/10 border border-claw-500/30 text-claw-300 min-w-[120px]">
@@ -320,7 +322,7 @@ export function Agents() {
                                                     </div>
                                                     <ChevronRight size={16} className="text-gray-600 mx-1 flex-shrink-0" />
                                                     <div className="px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs max-w-[200px] truncate">
-                                                        {agent?.model || 'Default Model'}
+                                                        {agent?.model || t('agents.defaultModel')}
                                                     </div>
                                                 </div>
                                             );
@@ -339,9 +341,9 @@ export function Agents() {
                     <div>
                         <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                             <Users className="text-claw-400" size={24} />
-                            Agents
+                            {t('agents.agentsTitle')}
                         </h2>
-                        <p className="text-sm text-gray-500">Manage agent definitions and overrides</p>
+                        <p className="text-sm text-gray-500">{t('agents.agentsDesc')}</p>
                     </div>
                     <div className="flex gap-2">
                         <button
@@ -358,7 +360,7 @@ export function Agents() {
                             className="btn-secondary flex items-center gap-2"
                         >
                             <Zap size={16} />
-                            Quick Setup
+                            {t('agents.quickSetup')}
                         </button>
                         <button
                             onClick={() => {
@@ -370,7 +372,7 @@ export function Agents() {
                             className="btn-primary flex items-center gap-2"
                         >
                             <Plus size={16} />
-                            Add Agent
+                            {t('agents.addAgent')}
                         </button>
                     </div>
                 </div>
@@ -378,7 +380,7 @@ export function Agents() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {agents.length === 0 ? (
                         <div className="col-span-full p-8 text-center text-gray-500 bg-dark-700/50 rounded-xl border border-dashed border-dark-600">
-                            No agents configured. Create one to get started.
+                            {t('agents.noAgents')}
                         </div>
                     ) : (
                         agents.map(agent => (
@@ -391,8 +393,8 @@ export function Agents() {
                                         <div>
                                             <h3 className="font-medium text-white">{agent.name || agent.id}</h3>
                                             <div className="flex gap-1">
-                                                {agent.default && <span className="text-xs text-emerald-400 bg-emerald-500/10 px-1.5 rounded">Default</span>}
-                                                {agent.sandbox && <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 rounded">Sandbox</span>}
+                                                {agent.default && <span className="text-xs text-emerald-400 bg-emerald-500/10 px-1.5 rounded">{t('agents.default')}</span>}
+                                                {agent.sandbox && <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 rounded">{t('agents.sandbox')}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -400,7 +402,7 @@ export function Agents() {
                                         <button
                                             onClick={() => handleCloneAgent(agent)}
                                             className="p-1.5 hover:bg-dark-600 rounded text-gray-400 hover:text-blue-400"
-                                            title="Clone Agent"
+                                            title={t('agents.cloneAgent')}
                                         >
                                             <Copy size={14} />
                                         </button>
@@ -411,14 +413,14 @@ export function Agents() {
                                                 setShowAgentDialog(true);
                                             }}
                                             className="p-1.5 hover:bg-dark-600 rounded text-gray-400 hover:text-white"
-                                            title="Edit Agent"
+                                            title={t('agents.editAgent')}
                                         >
                                             <Pencil size={14} />
                                         </button>
                                         <button
                                             onClick={() => handleDeleteAgent(agent.id)}
                                             className="p-1.5 hover:bg-dark-600 rounded text-gray-400 hover:text-red-400"
-                                            title="Delete Agent"
+                                            title={t('agents.deleteAgent')}
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -427,14 +429,14 @@ export function Agents() {
 
                                 <div className="space-y-2 text-sm text-gray-400">
                                     {agent.agent_dir && (
-                                        <div className="flex items-center gap-2" title="Agent Directory">
+                                        <div className="flex items-center gap-2" title={t('agents.agentDirectory')}>
                                             <div className="text-xs px-1.5 py-0.5 bg-dark-600 rounded border border-dark-500 font-mono text-gray-400">
                                                 ./{agent.agent_dir}
                                             </div>
                                         </div>
                                     )}
                                     {agent.model && (
-                                        <div className="flex items-center gap-2" title="Model Override">
+                                        <div className="flex items-center gap-2" title={t('agents.modelOverride')}>
                                             <MessageSquare size={14} />
                                             <span className="truncate">{agent.model}</span>
                                         </div>
@@ -452,9 +454,9 @@ export function Agents() {
                     <div>
                         <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                             <GitMerge className="text-purple-400" size={24} />
-                            Routing Rules
+                            {t('agents.routingRules')}
                         </h2>
-                        <p className="text-sm text-gray-500">Route incoming messages to specific agents</p>
+                        <p className="text-sm text-gray-500">{t('agents.routingDesc')}</p>
                     </div>
                     <button
                         onClick={() => {
@@ -468,7 +470,7 @@ export function Agents() {
                         className="btn-secondary flex items-center gap-2"
                     >
                         <Plus size={16} />
-                        Add Rule
+                        {t('agents.addRule')}
                     </button>
                 </div>
 
@@ -476,16 +478,16 @@ export function Agents() {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-dark-800 text-gray-400">
                             <tr>
-                                <th className="px-4 py-3 font-medium">If Matches...</th>
-                                <th className="px-4 py-3 font-medium">Route To Agent</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
+                                <th className="px-4 py-3 font-medium">{t('agents.ifMatches')}</th>
+                                <th className="px-4 py-3 font-medium">{t('agents.routeToAgent')}</th>
+                                <th className="px-4 py-3 text-right">{t('agents.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-dark-600">
                             {bindings.length === 0 ? (
                                 <tr>
                                     <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                                        No routing rules configured. Messages will use the default agent.
+                                        {t('agents.noRules')}
                                     </td>
                                 </tr>
                             ) : (
@@ -495,16 +497,16 @@ export function Agents() {
                                             <div className="flex flex-wrap gap-2">
                                                 {binding.match_rule?.channel && (
                                                     <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs border border-blue-500/30">
-                                                        Channel: {binding.match_rule.channel}
+                                                         {t('agents.channel')}{binding.match_rule.channel}
                                                     </span>
                                                 )}
                                                 {binding.match_rule?.account_id && (
                                                     <span className="px-2 py-1 rounded bg-green-500/20 text-green-300 text-xs border border-green-500/30">
-                                                        Account: {binding.match_rule.account_id}
+                                                         {t('agents.account')}{binding.match_rule.account_id}
                                                     </span>
                                                 )}
                                                 {!binding.match_rule?.channel && !binding.match_rule?.account_id && !binding.match_rule?.peer && (
-                                                    <span className="text-gray-500 italic">Catch-all</span>
+                                                     <span className="text-gray-500 italic">{t('agents.catchAll')}</span>
                                                 )}
                                             </div>
                                         </td>
@@ -520,7 +522,7 @@ export function Agents() {
                                                     onClick={() => handleTestRouting(binding.match_rule?.account_id || binding.agent_id)}
                                                     disabled={testingAccount === (binding.match_rule?.account_id || binding.agent_id)}
                                                     className="p-1.5 hover:bg-dark-500 rounded text-gray-400 hover:text-green-400 transition-colors"
-                                                    title="Test Routing"
+                                                     title={t('agents.testRouting')}
                                                 >
                                                     {testingAccount === (binding.match_rule?.account_id || binding.agent_id)
                                                         ? <Loader2 className="animate-spin" size={14} />
@@ -530,7 +532,7 @@ export function Agents() {
                                                 <button
                                                     onClick={() => handleDeleteBinding(idx)}
                                                     className="p-1.5 hover:bg-dark-500 rounded text-gray-400 hover:text-red-400 transition-colors"
-                                                    title="Delete Rule"
+                                                     title={t('agents.deleteRule')}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -560,24 +562,24 @@ export function Agents() {
                                         ? <CheckCircle2 size={18} className="text-green-400" />
                                         : <AlertCircle size={18} className="text-amber-400" />
                                     }
-                                    <span className="text-sm font-semibold text-white">Routing Test Result</span>
+                                     <span className="text-sm font-semibold text-white">{t('agents.routingTestResult')}</span>
                                 </div>
                                 <button onClick={() => setTestResult(null)} className="text-gray-500 hover:text-white"><X size={14} /></button>
                             </div>
                             <div className="space-y-2 text-sm">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">Agent:</span>
+                                     <span className="text-gray-400">{t('agents.agent')}</span>
                                     <span className="text-white font-medium">{testResult.agent_id}</span>
                                 </div>
                                 {testResult.model && (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-gray-400">Model:</span>
+                                         <span className="text-gray-400">{t('agents.model')}</span>
                                         <span className="text-purple-300">{testResult.model}</span>
                                     </div>
                                 )}
                                 {testResult.system_prompt_preview && (
                                     <div>
-                                        <span className="text-gray-400 text-xs">Personality (SOUL.md):</span>
+                                         <span className="text-gray-400 text-xs">{t('agents.personality')}</span>
                                         <div className="mt-1 p-2 bg-dark-700 rounded text-xs text-gray-300 font-mono max-h-24 overflow-auto">
                                             {testResult.system_prompt_preview}
                                         </div>
@@ -605,26 +607,26 @@ export function Agents() {
                         >
                             <div className="px-6 py-4 border-b border-dark-600 flex justify-between items-center flex-shrink-0">
                                 <h3 className="text-lg font-semibold text-white">
-                                    {editingAgent ? 'Edit Agent' : 'Add New Agent'}
+                                    {editingAgent ? t('agents.dialog.editAgent') : t('agents.dialog.addAgent')}
                                 </h3>
                                 <button onClick={() => setShowAgentDialog(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
                             </div>
 
                             <div className="p-6 space-y-4 overflow-y-auto">
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Agent ID *</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.agentId')}</label>
                                     <input
                                         type="text"
                                         value={agentForm.id}
                                         onChange={e => setAgentForm({ ...agentForm, id: e.target.value })}
                                         disabled={!!editingAgent}
                                         className="input-base"
-                                        placeholder="e.g. coder"
+                                        placeholder={t('agents.dialog.agentIdPlaceholder')}
                                     />
                                 </div>
                                 {/* Default Agent checkbox removed - Main agent is always default */}\n
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Workspace Path</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.workspacePath')}</label>
                                     <input
                                         type="text"
                                         value={agentForm.workspace || ''}
@@ -632,10 +634,10 @@ export function Agents() {
                                         className="input-base"
                                         placeholder={openclawHomeDir ? (agentForm.default ? `${openclawHomeDir.replace(/\\/g, '/')}/workspace` : `${openclawHomeDir.replace(/\\/g, '/')}/workspace-${agentForm.id || 'agent'}`) : '/path/to/workspace'}
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">Default: <code className="text-gray-400">{openclawHomeDir ? `${openclawHomeDir.replace(/\\/g, '/')}/workspace-${agentForm.id || '{id}'}` : '~/.openclaw/workspace-{id}'}</code></p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('agents.dialog.default')}<code className="text-gray-400">{openclawHomeDir ? `${openclawHomeDir.replace(/\\/g, '/')}/workspace-${agentForm.id || '{id}'}` : '~/.openclaw/workspace-{id}'}</code></p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Agent Directory</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.agentDir')}</label>
                                     <input
                                         type="text"
                                         value={agentForm.agent_dir || ''}
@@ -643,16 +645,16 @@ export function Agents() {
                                         className="input-base"
                                         placeholder={openclawHomeDir ? `${openclawHomeDir.replace(/\\/g, '/')}/agents/${agentForm.id || 'agent'}/agent` : 'agents/{id}/agent'}
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">State & session storage directory.</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('agents.dialog.agentDirDesc')}</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Model Override (Optional)</label>
+                                             <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.modelOverride')}</label>
                                     <input
                                         type="text"
                                         value={agentForm.model || ''}
                                         onChange={e => setAgentForm({ ...agentForm, model: e.target.value || null })}
                                         className="input-base"
-                                        placeholder="e.g. glm/glm-5"
+                                        placeholder={t('agents.dialog.modelPlaceholder')}
                                     />
                                 </div>
 
@@ -665,16 +667,16 @@ export function Agents() {
                                         onChange={e => setAgentForm({ ...agentForm, sandbox: e.target.checked })}
                                         className="w-4 h-4 rounded bg-dark-600 border-dark-500 text-claw-500 focus:ring-claw-500/50"
                                     />
-                                    <label htmlFor="sandbox" className="text-sm text-gray-300 select-none">Enable Sandbox</label>
+                                    <label htmlFor="sandbox" className="text-sm text-gray-300 select-none">{t('agents.dialog.enableSandbox')}</label>
                                 </div>
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Heartbeat Interval (Optional)</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.heartbeat')}</label>
                                     <input
                                         type="text"
                                         value={agentForm.heartbeat || ''}
                                         onChange={e => setAgentForm({ ...agentForm, heartbeat: e.target.value || null })}
                                         className="input-base"
-                                        placeholder='e.g. "1h" or "0m" to disable'
+                                        placeholder={t('agents.dialog.heartbeatPlaceholder')}
                                     />
                                 </div>
 
@@ -682,11 +684,11 @@ export function Agents() {
                                 <div className="pt-3 border-t border-dark-600">
                                     <label className="block text-sm text-gray-400 mb-2 flex items-center gap-2">
                                         <GitMerge size={14} />
-                                        Allowed Subagents
+                                         {t('agents.dialog.subagents')}
                                     </label>
-                                    <p className="text-xs text-gray-500 mb-2">Select which other agents this agent can spawn as subagents.</p>
+                                     <p className="text-xs text-gray-500 mb-2">{t('agents.dialog.subagentsDesc')}</p>
                                     {agents.filter(a => a.id !== agentForm.id).length === 0 ? (
-                                        <p className="text-xs text-gray-600 italic">No other agents available. Create more agents first.</p>
+                                         <p className="text-xs text-gray-600 italic">{t('agents.dialog.noSubagents')}</p>
                                     ) : (
                                         <div className="space-y-1.5 max-h-32 overflow-y-auto">
                                             {agents.filter(a => a.id !== agentForm.id).map(a => {
@@ -719,14 +721,14 @@ export function Agents() {
                             </div>
 
                             <div className="px-6 py-4 border-t border-dark-600 flex justify-end gap-3 flex-shrink-0">
-                                <button onClick={() => setShowAgentDialog(false)} className="btn-secondary">Cancel</button>
+                                <button onClick={() => setShowAgentDialog(false)} className="btn-secondary">{t('agents.dialog.cancel')}</button>
                                 <button
                                     onClick={handleSaveAgent}
                                     disabled={saving || !agentForm.id}
                                     className="btn-primary flex items-center gap-2"
                                 >
                                     {saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                                    Save Agent
+                                    {t('agents.dialog.saveAgent')}
                                 </button>
                             </div>
                         </motion.div>
@@ -746,13 +748,13 @@ export function Agents() {
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="px-6 py-4 border-b border-dark-600 flex justify-between items-center">
-                                <h3 className="text-lg font-semibold text-white">Add Routing Rule</h3>
+                                <h3 className="text-lg font-semibold text-white">{t('agents.dialog.addRule')}</h3>
                                 <button onClick={() => setShowBindingDialog(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
                             </div>
 
                             <div className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-sm text-gray-400 mb-1">Route To Agent *</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.routeToAgent')}</label>
                                     <select
                                         value={bindingForm.agent_id}
                                         onChange={e => setBindingForm({ ...bindingForm, agent_id: e.target.value })}
@@ -763,20 +765,20 @@ export function Agents() {
                                 </div>
 
                                 <div className="pt-2 border-t border-dark-600">
-                                    <p className="text-xs text-gray-500 mb-3 uppercase font-semibold">Match Criteria</p>
+                                    <p className="text-xs text-gray-500 mb-3 uppercase font-semibold">{t('agents.dialog.matchCriteria')}</p>
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="block text-sm text-gray-400 mb-1">Channel</label>
+                                             <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.channel')}</label>
                                             <input
                                                 type="text"
                                                 value={bindingForm.match_rule.channel || 'telegram'}
                                                 readOnly
                                                 className="input-base bg-dark-700 text-gray-400 cursor-not-allowed"
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">Currently only Telegram supports multi-agent routing.</p>
+                                             <p className="text-xs text-gray-500 mt-1">{t('agents.dialog.channelHint')}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm text-gray-400 mb-1">Bot Account *</label>
+                                             <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.botAccount')}</label>
                                             <select
                                                 value={bindingForm.match_rule.account_id || ''}
                                                 onChange={e => setBindingForm({
@@ -785,7 +787,7 @@ export function Agents() {
                                                 })}
                                                 className="input-base"
                                             >
-                                                <option value="">Select a bot account...</option>
+                                                 <option value="">{t('agents.dialog.selectBot')}</option>
                                                 {telegramAccounts.map(acct => (
                                                     <option key={acct.id} value={acct.id}>{acct.id}</option>
                                                 ))}
@@ -796,14 +798,14 @@ export function Agents() {
                             </div>
 
                             <div className="px-6 py-4 border-t border-dark-600 flex justify-end gap-3">
-                                <button onClick={() => setShowBindingDialog(false)} className="btn-secondary">Cancel</button>
+                                <button onClick={() => setShowBindingDialog(false)} className="btn-secondary">{t('agents.dialog.cancel')}</button>
                                 <button
                                     onClick={handleSaveBinding}
                                     disabled={saving || !bindingForm.agent_id}
                                     className="btn-primary flex items-center gap-2"
                                 >
                                     {saving ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-                                    Add Rule
+                                     {t('agents.dialog.addRuleBtn')}
                                 </button>
                             </div>
                         </motion.div>
@@ -825,14 +827,14 @@ export function Agents() {
                             <div className="px-6 py-4 border-b border-dark-600 flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                     <Zap className="text-amber-400" size={20} />
-                                    <h3 className="text-lg font-semibold text-white">Quick Agent Setup</h3>
+                                    <h3 className="text-lg font-semibold text-white">{t('agents.dialog.quickSetup')}</h3>
                                 </div>
                                 <button onClick={() => setShowWizardDialog(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
                             </div>
 
                             {/* Step indicators */}
                             <div className="px-6 pt-4 flex gap-2">
-                                {['Bot Account', 'Agent Config'].map((label, i) => (
+                                {[t('agents.dialog.stepBot'), t('agents.dialog.stepAgent')].map((label, i) => (
                                     <div key={i} className="flex-1">
                                         <div className={`h-1 rounded-full transition-colors ${i <= wizardStep ? 'bg-claw-500' : 'bg-dark-600'}`} />
                                         <p className={`text-xs mt-1 ${i <= wizardStep ? 'text-claw-400' : 'text-gray-600'}`}>{label}</p>
@@ -843,9 +845,9 @@ export function Agents() {
                             <div className="p-6 space-y-4 min-h-[220px]">
                                 {wizardStep === 0 && (
                                     <div className="space-y-4">
-                                        <p className="text-sm text-gray-300">Select the Telegram bot account to link with a new agent.</p>
+                                         <p className="text-sm text-gray-300">{t('agents.dialog.selectBotDesc')}</p>
                                         <div>
-                                            <label className="block text-sm text-gray-400 mb-1">Bot Account</label>
+                                             <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.botAccount')}</label>
                                             <select
                                                 value={wizardForm.botAccountId}
                                                 onChange={e => {
@@ -854,7 +856,7 @@ export function Agents() {
                                                 }}
                                                 className="input-base"
                                             >
-                                                <option value="">Select a bot...</option>
+                                                 <option value="">{t('agents.dialog.selectBot')}</option>
                                                 {telegramAccounts.map(acct => (
                                                     <option key={acct.id} value={acct.id}>{acct.id}</option>
                                                 ))}
@@ -865,27 +867,27 @@ export function Agents() {
 
                                 {wizardStep === 1 && (
                                     <div className="space-y-4">
-                                        <p className="text-sm text-gray-300">Configure the agent that will handle messages for <span className="text-claw-400 font-medium">{wizardForm.botAccountId}</span>.</p>
+                                         <p className="text-sm text-gray-300">{t('agents.dialog.configureAgentDesc')}<span className="text-claw-400 font-medium">{wizardForm.botAccountId}</span>.</p>
                                         <div>
-                                            <label className="block text-sm text-gray-400 mb-1">Agent ID</label>
+                                             <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.agentId')}</label>
                                             <input
                                                 type="text"
                                                 value={wizardForm.agentId}
                                                 onChange={e => setWizardForm({ ...wizardForm, agentId: e.target.value })}
                                                 className="input-base"
-                                                placeholder="e.g. coder"
+                                        placeholder={t('agents.dialog.agentIdPlaceholder')}
                                             />
-                                            <p className="text-xs text-gray-500 mt-1">Workspace: <code className="text-gray-400">{`workspace-${wizardForm.agentId || '{id}'}/`}</code></p>
+                                             <p className="text-xs text-gray-500 mt-1">{t('agents.dialog.workspace')}<code className="text-gray-400">{`workspace-${wizardForm.agentId || '{id}'}/`}</code></p>
                                         </div>
                                         {/* Default Agent checkbox removed */}\n
                                         <div>
-                                            <label className="block text-sm text-gray-400 mb-1">Model Override (Optional)</label>
+                                    <label className="block text-sm text-gray-400 mb-1">{t('agents.dialog.modelOverride')}</label>
                                             <input
                                                 type="text"
                                                 value={wizardForm.model}
                                                 onChange={e => setWizardForm({ ...wizardForm, model: e.target.value })}
                                                 className="input-base"
-                                                placeholder="Leave empty for default model"
+                                                 placeholder={t('agents.dialog.modelHint')}
                                             />
                                         </div>
                                     </div>
@@ -899,7 +901,7 @@ export function Agents() {
                                     onClick={() => wizardStep === 0 ? setShowWizardDialog(false) : setWizardStep(wizardStep - 1)}
                                     className="btn-secondary"
                                 >
-                                    {wizardStep === 0 ? 'Cancel' : 'Back'}
+                                    {wizardStep === 0 ? t('agents.dialog.cancel') : t('agents.dialog.back')}
                                 </button>
                                 {wizardStep < 1 ? (
                                     <button
@@ -907,7 +909,7 @@ export function Agents() {
                                         disabled={!wizardForm.botAccountId}
                                         className="btn-primary flex items-center gap-2"
                                     >
-                                        Next
+                                         {t('agents.dialog.next')}
                                         <ChevronRight size={16} />
                                     </button>
                                 ) : (
@@ -917,7 +919,7 @@ export function Agents() {
                                         className="btn-primary flex items-center gap-2"
                                     >
                                         {saving ? <Loader2 className="animate-spin" size={16} /> : <Zap size={16} />}
-                                        Create Agent & Binding
+                                         {t('agents.dialog.createAgent')}
                                     </button>
                                 )}
                             </div>

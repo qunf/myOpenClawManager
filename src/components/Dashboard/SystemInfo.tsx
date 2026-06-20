@@ -12,8 +12,10 @@ import {
   Shield,
   RefreshCw,
   Server,
+  FolderOpen,
 } from 'lucide-react';
 import { isTauri } from '../../lib/tauri';
+import { useTranslation } from 'react-i18next';
 
 interface EnvironmentStatus {
   node_installed: boolean;
@@ -50,11 +52,18 @@ interface Requirement {
 }
 
 export function SystemInfo() {
+  const { t } = useTranslation();
   const [envStatus, setEnvStatus] = useState<EnvironmentStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Custom path states
+  const [showInstallPathInput, setShowInstallPathInput] = useState(false);
+  const [installPath, setInstallPath] = useState('');
+  const [showSpecifyPath, setShowSpecifyPath] = useState(false);
+  const [specifyPath, setSpecifyPath] = useState('');
 
   const checkEnvironment = async () => {
     if (!isTauri()) {
@@ -66,7 +75,7 @@ export function SystemInfo() {
       setEnvStatus(status);
       setError(null);
     } catch (e) {
-      setError(`Failed to check environment: ${e}`);
+      setError(t('dashboard.system.checkFailed', { error: e }));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -93,27 +102,42 @@ export function SystemInfo() {
         setError(result.error || result.message);
       }
     } catch (e) {
-      setError(`Failed to install Node.js: ${e}`);
+      setError(t('dashboard.system.installNodeFailed', { error: e }));
     } finally {
       setInstalling(null);
     }
   };
 
-  const handleInstallOpenclaw = async () => {
+  const handleInstallOpenclaw = async (customPath?: string) => {
     setInstalling('openclaw');
     setError(null);
     try {
-      const result = await invoke<InstallResult>('install_openclaw');
+      const pathParam = customPath || installPath || null;
+      const result = await invoke<InstallResult>('install_openclaw', { installPath: pathParam });
       if (result.success) {
         await invoke<InstallResult>('init_openclaw_config');
         await checkEnvironment();
+        setShowInstallPathInput(false);
+        setInstallPath('');
       } else {
         setError(result.error || result.message);
       }
     } catch (e) {
-      setError(`Failed to install OpenClaw: ${e}`);
+      setError(t('dashboard.system.installOpenclawFailed', { error: e }));
     } finally {
       setInstalling(null);
+    }
+  };
+
+  const handleSpecifyPath = async () => {
+    if (!specifyPath.trim()) return;
+    try {
+      await invoke('save_custom_openclaw_path', { path: specifyPath.trim() });
+      await checkEnvironment();
+      setShowSpecifyPath(false);
+      setSpecifyPath('');
+    } catch (e) {
+      setError(t('dashboard.system.checkFailed', { error: e }));
     }
   };
 
@@ -125,7 +149,7 @@ export function SystemInfo() {
       // Gateway install opens an elevated terminal — user needs to complete it there
       // Don't auto-refresh; user clicks Refresh when done
     } catch (e) {
-      setError(`Failed to install Gateway Service: ${e}`);
+      setError(t('dashboard.system.installGatewayFailed', { error: e }));
     } finally {
       setInstalling(null);
     }
@@ -142,7 +166,7 @@ export function SystemInfo() {
   if (loading) {
     return (
       <div className="bg-dark-700 rounded-2xl p-6 border border-dark-500">
-        <h3 className="text-lg font-semibold text-white mb-4">System Requirements</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.system.title')}</h3>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-8 h-8 text-claw-400 animate-spin" />
         </div>
@@ -153,8 +177,8 @@ export function SystemInfo() {
   if (!envStatus) {
     return (
       <div className="bg-dark-700 rounded-2xl p-6 border border-dark-500">
-        <h3 className="text-lg font-semibold text-white mb-4">System Requirements</h3>
-        <p className="text-gray-400 text-sm">Unable to detect system environment.</p>
+        <h3 className="text-lg font-semibold text-white mb-4">{t('dashboard.system.title')}</h3>
+        <p className="text-gray-400 text-sm">{t('dashboard.system.unableDetect')}</p>
       </div>
     );
   }
@@ -162,14 +186,14 @@ export function SystemInfo() {
   const requirements: Requirement[] = [
     {
       id: 'nodejs',
-      name: 'Node.js',
-      description: 'JavaScript runtime (v22+ required)',
+      name: t('dashboard.system.nodejs'),
+      description: t('dashboard.system.nodejsDesc'),
       icon: <Cpu size={18} />,
       installed: envStatus.node_installed && envStatus.node_version_ok,
       version: envStatus.node_version,
       versionOk: envStatus.node_version_ok,
       versionNote: envStatus.node_installed && !envStatus.node_version_ok
-        ? 'Version too old, requires v22+'
+        ? t('dashboard.system.nodejsOld')
         : undefined,
       installAction: handleInstallNodejs,
       downloadUrl: 'https://nodejs.org/en/download',
@@ -177,8 +201,8 @@ export function SystemInfo() {
     },
     {
       id: 'git',
-      name: 'Git',
-      description: 'Version control for MCP & skill repos',
+      name: t('dashboard.system.git'),
+      description: t('dashboard.system.gitDesc'),
       icon: <GitBranch size={18} />,
       installed: envStatus.git_installed,
       version: envStatus.git_version,
@@ -187,8 +211,8 @@ export function SystemInfo() {
     },
     {
       id: 'openclaw',
-      name: 'OpenClaw',
-      description: 'AI agent framework',
+      name: t('dashboard.system.openclaw'),
+      description: t('dashboard.system.openclawDesc'),
       icon: <Package size={18} />,
       installed: envStatus.openclaw_installed,
       version: envStatus.openclaw_version,
@@ -197,8 +221,8 @@ export function SystemInfo() {
     },
     ...(envStatus.openclaw_installed ? [{
       id: 'gateway',
-      name: 'Gateway Service',
-      description: 'System service (requires admin)',
+      name: t('dashboard.system.gateway'),
+      description: t('dashboard.system.gatewayDesc'),
       icon: <Server size={18} />,
       installed: envStatus.gateway_service_installed,
       version: null,
@@ -222,11 +246,11 @@ export function SystemInfo() {
             <Shield size={18} className={allReady ? 'text-green-400' : 'text-amber-400'} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">System Requirements</h3>
+            <h3 className="text-lg font-semibold text-white">{t('dashboard.system.title')}</h3>
             <p className="text-xs text-gray-500">
               {allReady
-                ? 'All prerequisites are installed and ready'
-                : `${installedCount}/${totalCount} prerequisites installed`}
+                ? t('dashboard.system.allReady')
+                : t('dashboard.system.prereqProgress', { installed: installedCount, total: totalCount })}
             </p>
           </div>
         </div>
@@ -234,7 +258,7 @@ export function SystemInfo() {
           onClick={handleRefresh}
           disabled={refreshing}
           className="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors"
-          title="Re-check requirements"
+          title={t('dashboard.system.recheck')}
         >
           <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
         </button>
@@ -260,68 +284,167 @@ export function SystemInfo() {
         {requirements.map((req) => (
           <div
             key={req.id}
-            className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${req.installed
+            className={`flex flex-col p-3 rounded-xl border transition-colors ${req.installed
               ? 'bg-green-500/5 border-green-500/10'
               : 'bg-red-500/5 border-red-500/15'
               }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${req.installed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                }`}>
-                {req.installed ? <CheckCircle2 size={16} /> : req.icon}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white">{req.name}</span>
-                  {req.installed && req.version && (
-                    <span className="text-xs text-gray-500 font-mono">{req.version}</span>
-                  )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${req.installed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                  {req.installed ? <CheckCircle2 size={16} /> : req.icon}
                 </div>
-                <p className="text-xs text-gray-500">
-                  {req.versionNote || req.description}
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-white">{req.name}</span>
+                    {req.installed && req.version && (
+                      <span className="text-xs text-gray-500 font-mono">{req.version}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {req.versionNote || req.description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {req.installed ? (
+                  <span className="text-xs text-green-400 font-medium px-2 py-1 bg-green-500/10 rounded-md">
+                    {t('dashboard.system.ready')}
+                  </span>
+                ) : (
+                  <>
+                    {req.canAutoInstall && req.installAction && (
+                      <>
+                        {req.id === 'openclaw' && !showInstallPathInput ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => req.installAction?.()}
+                              disabled={installing !== null}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-claw-600 hover:bg-claw-700 text-white rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
+                            >
+                              {installing === req.id ? (
+                                <>
+                                  <Loader2 size={12} className="animate-spin" />
+                                  <span>{t('dashboard.system.installing')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Download size={12} />
+                                  <span>{t('dashboard.system.install')}</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setShowInstallPathInput(true)}
+                              disabled={installing !== null}
+                              className="flex items-center gap-1 px-2 py-1.5 text-gray-400 hover:text-white hover:bg-dark-500 rounded-lg transition-colors text-xs"
+                              title={t('dashboard.system.customPath')}
+                            >
+                              <FolderOpen size={12} />
+                            </button>
+                          </div>
+                        ) : req.id === 'openclaw' && showInstallPathInput ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={installPath}
+                              onChange={(e) => setInstallPath(e.target.value)}
+                              placeholder={t('dashboard.system.installPathPlaceholder')}
+                              className="flex-1 px-2 py-1 text-xs bg-dark-600 border border-dark-500 rounded text-white placeholder-gray-500 min-w-[200px]"
+                            />
+                            <button
+                              onClick={() => handleInstallOpenclaw()}
+                              disabled={installing !== null}
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-claw-600 hover:bg-claw-700 text-white rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
+                            >
+                              {installing === req.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Download size={12} />
+                              )}
+                              <span>{t('dashboard.system.install')}</span>
+                            </button>
+                            <button
+                              onClick={() => { setShowInstallPathInput(false); setInstallPath(''); }}
+                              className="px-2 py-1.5 text-gray-400 hover:text-white text-xs"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => req.installAction?.()}
+                            disabled={installing !== null}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-claw-600 hover:bg-claw-700 text-white rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
+                          >
+                            {installing === req.id ? (
+                              <>
+                                <Loader2 size={12} className="animate-spin" />
+                                <span>{t('dashboard.system.installing')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download size={12} />
+                                <span>{t('dashboard.system.install')}</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {req.downloadUrl && req.id !== 'openclaw' && (
+                      <button
+                        onClick={() => handleOpenUrl(req.downloadUrl!)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-dark-500 rounded-lg transition-colors text-xs"
+                        title={t('dashboard.system.download')}
+                      >
+                        <ExternalLink size={12} />
+                        <span>{t('dashboard.system.download')}</span>
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {req.installed ? (
-                <span className="text-xs text-green-400 font-medium px-2 py-1 bg-green-500/10 rounded-md">
-                  Ready
-                </span>
-              ) : (
-                <>
-                  {req.canAutoInstall && req.installAction && (
+            {/* OpenClaw specify path section */}
+            {req.id === 'openclaw' && !req.installed && (
+              <div className="mt-2 pt-2 border-t border-dark-600">
+                {!showSpecifyPath ? (
+                  <button
+                    onClick={() => setShowSpecifyPath(true)}
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-claw-400 transition-colors"
+                  >
+                    <FolderOpen size={12} />
+                    <span>{t('dashboard.system.specifyPath')}</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={specifyPath}
+                      onChange={(e) => setSpecifyPath(e.target.value)}
+                      placeholder={t('dashboard.system.specifyPathPlaceholder')}
+                      className="flex-1 px-2 py-1 text-xs bg-dark-600 border border-dark-500 rounded text-white placeholder-gray-500"
+                    />
                     <button
-                      onClick={req.installAction}
-                      disabled={installing !== null}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-claw-600 hover:bg-claw-700 text-white rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
+                      onClick={handleSpecifyPath}
+                      className="px-3 py-1.5 bg-dark-500 hover:bg-dark-400 text-white rounded-lg transition-colors text-xs font-medium"
                     >
-                      {installing === req.id ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          <span>Installing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Download size={12} />
-                          <span>Install</span>
-                        </>
-                      )}
+                      {t('dashboard.system.confirm')}
                     </button>
-                  )}
-                  {req.downloadUrl && (
                     <button
-                      onClick={() => handleOpenUrl(req.downloadUrl!)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-gray-300 hover:text-white hover:bg-dark-500 rounded-lg transition-colors text-xs"
-                      title={`Download ${req.name}`}
+                      onClick={() => { setShowSpecifyPath(false); setSpecifyPath(''); }}
+                      className="px-2 py-1.5 text-gray-400 hover:text-white text-xs"
                     >
-                      <ExternalLink size={12} />
-                      <span>Download</span>
+                      ✕
                     </button>
-                  )}
-                </>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

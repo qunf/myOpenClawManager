@@ -197,6 +197,12 @@ export const api = {
   saveEnvValue: (key: string, value: string) =>
     invokeWithLog<string>('save_env_value', { key, value }),
 
+  // Custom OpenClaw Path & Port
+  getCustomOpenclawPath: () => invokeWithLog<string | null>('get_custom_openclaw_path'),
+  saveCustomOpenclawPath: (path: string | null) => invokeWithLog<string>('save_custom_openclaw_path', { path }),
+  getGatewayPort: () => invokeWithLog<number>('get_gateway_port'),
+  saveGatewayPort: (port: number) => invokeWithLog<string>('save_gateway_port', { port }),
+
   // 2026.3.2 Features
   getToolsProfile: () => invokeWithLog<string>('get_tools_profile'),
   saveToolsProfile: (profile: string) => invokeWithLog<string>('save_tools_profile', { profile }),
